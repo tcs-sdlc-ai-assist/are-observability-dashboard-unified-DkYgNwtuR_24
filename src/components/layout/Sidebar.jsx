@@ -11,6 +11,7 @@ import {
   getExternalLinks,
 } from '../../constants/navigation';
 import { hasPermission as checkHasPermission } from '../../constants/roles';
+import logoUrl from '../../assets/logo.png';
 
 /**
  * Icon component that renders SVG icons based on a string key.
@@ -374,11 +375,11 @@ const Sidebar = ({ mobileOpen = false, onMobileClose }) => {
       <div className="flex flex-col h-full">
         {/* Logo / Brand */}
         <div
-          className={`flex items-center h-16 border-b border-dashboard-sidebar-hover flex-shrink-0 ${
+          className={`flex items-center border-b border-dashboard-sidebar-hover flex-shrink-0 min-h-[88px] ${
             collapsed ? 'justify-center px-2' : 'px-4'
           }`}
         >
-          <div className="flex items-center gap-3 min-w-0">
+          {collapsed ? (
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-600 flex-shrink-0">
               <svg
                 className="w-5 h-5 text-white"
@@ -399,13 +400,14 @@ const Sidebar = ({ mobileOpen = false, onMobileClose }) => {
                 />
               </svg>
             </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <h1 className="text-sm font-bold text-white truncate">Horizon</h1>
-                <p className="text-xs text-dashboard-sidebar-text truncate">ARE Observability</p>
-              </div>
-            )}
-          </div>
+          ) : (
+            <img 
+              src={logoUrl} 
+              alt="Logo" 
+              className="w-[204px] h-[72px] object-contain flex-shrink-0 bg-white rounded-md p-2 shadow-sm" 
+              style={{ width: '204px', height: '72px' }}
+            />
+          )}
         </div>
 
         {/* Navigation Sections */}
