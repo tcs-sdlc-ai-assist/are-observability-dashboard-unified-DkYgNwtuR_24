@@ -9,12 +9,8 @@ import {
 import {
   SEVERITY_LEVELS,
   RCA_CATEGORIES,
-  DOMAIN_TIERS,
-  SERVICE_STATUS,
-  getServiceStatusFromAvailability,
-  getDefaultSLATarget,
-  getDefaultSLOTarget,
 } from '../constants/metrics';
+import { transformMetricsRowsToDashboardData } from '../utils/metricsTransform';
 
 /**
  * Determine the file type category from a file name.
@@ -497,89 +493,7 @@ const validate = (rows, schemaType, options = {}) => {
  * @returns {{ domains: Object[] }} Transformed domain data.
  */
 const transformMetricsToDashboard = (rows) => {
-  const domainMap = new Map();
-
-  for (const row of rows) {
-    if (!row.domain_id || !row.service_id) {
-      continue;
-    }
-
-    const domainId = String(row.domain_id).trim();
-    const serviceId = String(row.service_id).trim();
-
-    if (!domainMap.has(domainId)) {
-      domainMap.set(domainId, {
-        domain_id: domainId,
-        name: row.domain_name ? String(row.domain_name).trim() : domainId,
-        tier: row.tier ? String(row.tier).trim() : DOMAIN_TIERS.SUPPORTING,
-        services: new Map(),
-      });
-    }
-
-    const domain = domainMap.get(domainId);
-    const serviceMap = domain.services;
-
-    if (!serviceMap.has(serviceId)) {
-      serviceMap.set(serviceId, {
-        service_id: serviceId,
-        name: row.service_name ? String(row.service_name).trim() : serviceId,
-        availability: 0,
-        sla: getDefaultSLATarget(domain.tier),
-        slo: getDefaultSLOTarget(domain.tier),
-        error_budget: 100,
-        status: SERVICE_STATUS.UNKNOWN,
-        golden_signals: {},
-        dependencies: [],
-      });
-    }
-
-    const service = serviceMap.get(serviceId);
-
-    // Update availability
-    if (row.availability != null && !isNaN(parseFloat(row.availability))) {
-      service.availability = parseFloat(parseFloat(row.availability).toFixed(2));
-      service.status = getServiceStatusFromAvailability(service.availability);
-    }
-
-    // Update SLA/SLO if provided
-    if (row.sla != null && !isNaN(parseFloat(row.sla))) {
-      service.sla = parseFloat(parseFloat(row.sla).toFixed(2));
-    }
-
-    if (row.slo != null && !isNaN(parseFloat(row.slo))) {
-      service.slo = parseFloat(parseFloat(row.slo).toFixed(2));
-    }
-
-    if (row.error_budget != null && !isNaN(parseFloat(row.error_budget))) {
-      service.error_budget = parseFloat(parseFloat(row.error_budget).toFixed(2));
-    }
-
-    // Map golden signal fields
-    const signalFields = [
-      'latency_p95',
-      'latency_p99',
-      'traffic_rps',
-      'errors_5xx',
-      'errors_functional',
-      'saturation_cpu',
-      'saturation_mem',
-      'saturation_queue',
-    ];
-
-    for (const field of signalFields) {
-      if (row[field] != null && !isNaN(parseFloat(row[field]))) {
-        service.golden_signals[field] = parseFloat(parseFloat(row[field]).toFixed(2));
-      }
-    }
-  }
-
-  // Convert Maps to arrays
-  const domains = Array.from(domainMap.values()).map((domain) => ({
-    ...domain,
-    services: Array.from(domain.services.values()),
-  }));
-
-  return { domains };
+  return transformMetricsRowsToDashboardData(rows);
 };
 
 /**
