@@ -44,7 +44,7 @@ const SLOComplianceCard = ({
   showServiceDetail = true,
   mode = 'both',
 }) => {
-  const { domains, isLoading, error } = useDashboard();
+  const { filteredDomains, isLoading, error } = useDashboard();
   const [expandedDomains, setExpandedDomains] = useState({});
   const [activeView, setActiveView] = useState(mode === 'slo' ? 'slo' : 'sla');
 
@@ -78,7 +78,7 @@ const SLOComplianceCard = ({
    * Compute per-domain and per-service compliance data.
    */
   const complianceData = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return { tierGroups: [], overall: null };
     }
 
@@ -88,7 +88,7 @@ const SLOComplianceCard = ({
     let sloCompliantServices = 0;
     let totalAvailability = 0;
 
-    for (const domain of domains) {
+    for (const domain of filteredDomains) {
       const tier = domain.tier || DOMAIN_TIERS.SUPPORTING;
       const slaTarget = DEFAULT_SLA_TARGETS[tier] ?? 99.9;
       const sloTarget = DEFAULT_SLO_TARGETS[tier] ?? 99.5;
@@ -232,7 +232,7 @@ const SLOComplianceCard = ({
         overallSloComplianceRate,
       },
     };
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Get the compliance color class based on compliance rate.
@@ -307,7 +307,7 @@ const SLOComplianceCard = ({
   }
 
   // Empty state
-  if (!domains || domains.length === 0) {
+  if (!filteredDomains || filteredDomains.length === 0) {
     return (
       <div className={`${className}`}>
         <EmptyState
@@ -528,9 +528,7 @@ const SLOComplianceCard = ({
                   </span>
                   <span>
                     Compliance:{' '}
-                    <span
-                      className={`font-medium ${getComplianceColorClass(tierComplianceRate)}`}
-                    >
+                    <span className={`font-medium ${getComplianceColorClass(tierComplianceRate)}`}>
                       {formatPercentage(tierComplianceRate, 2)}
                     </span>
                   </span>
@@ -539,7 +537,7 @@ const SLOComplianceCard = ({
 
               {/* Domain Cards Grid */}
               <div
-                className={`grid gap-3 ${compact ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}
+                className={`grid gap-3 items-stretch ${compact ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}
               >
                 {tierGroup.domains.map((domainData) => {
                   const isExpanded = expandedDomains[domainData.domain_id] || false;
@@ -559,7 +557,7 @@ const SLOComplianceCard = ({
                   return (
                     <div
                       key={domainData.domain_id}
-                      className={`dashboard-card overflow-hidden ${
+                      className={`dashboard-card overflow-hidden h-full ${
                         showServiceDetail ? 'cursor-pointer' : ''
                       }`}
                     >
@@ -681,9 +679,7 @@ const SLOComplianceCard = ({
                               <tbody className="divide-y divide-dashboard-border">
                                 {domainData.services.map((service) => {
                                   const svcTarget =
-                                    activeView === 'sla'
-                                      ? service.sla_target
-                                      : service.slo_target;
+                                    activeView === 'sla' ? service.sla_target : service.slo_target;
                                   const svcCompliant =
                                     activeView === 'sla'
                                       ? service.sla_compliant

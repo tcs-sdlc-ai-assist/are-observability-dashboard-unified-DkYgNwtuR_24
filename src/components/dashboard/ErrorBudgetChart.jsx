@@ -63,7 +63,7 @@ const ErrorBudgetChart = ({
   showServiceDetail = true,
   showChart = true,
 }) => {
-  const { domains, isLoading, error } = useDashboard();
+  const { filteredDomains: domains, isLoading, error } = useDashboard();
   const [expandedDomains, setExpandedDomains] = useState({});
 
   /**
@@ -643,7 +643,7 @@ const ErrorBudgetChart = ({
 
             {/* Domain Cards Grid */}
             <div
-              className={`grid gap-3 ${compact ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}
+              className={`grid gap-3 items-stretch ${compact ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}
             >
               {tierGroup.domains.map((domainData) => {
                 const isExpanded =
@@ -652,7 +652,7 @@ const ErrorBudgetChart = ({
                 return (
                   <div
                     key={domainData.domain_id}
-                    className={`dashboard-card overflow-hidden ${
+                    className={`dashboard-card overflow-hidden h-full ${
                       showServiceDetail ? 'cursor-pointer' : ''
                     }`}
                   >

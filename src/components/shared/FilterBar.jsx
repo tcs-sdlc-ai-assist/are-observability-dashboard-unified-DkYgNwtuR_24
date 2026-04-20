@@ -96,11 +96,10 @@ const FilterDropdown = ({ label, value, options, onChange, placeholder = 'All', 
       {/* Trigger button */}
       <button
         onClick={toggleOpen}
-        className={`flex items-center justify-between gap-2 w-full min-w-[140px] px-3 py-1.5 text-sm bg-white border rounded-lg transition-colors duration-150 ${
-          isOpen
+        className={`flex items-center justify-between gap-2 w-full min-w-[140px] px-3 py-1.5 text-sm bg-white border rounded-lg transition-colors duration-150 ${isOpen
             ? 'border-brand-500 ring-2 ring-brand-500/20'
             : 'border-dashboard-border hover:border-gray-300'
-        } ${value ? 'text-dashboard-text-primary' : 'text-dashboard-text-muted'}`}
+          } ${value ? 'text-dashboard-text-primary' : 'text-dashboard-text-muted'}`}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label={`${label} filter`}
@@ -120,9 +119,8 @@ const FilterDropdown = ({ label, value, options, onChange, placeholder = 'All', 
             </span>
           )}
           <svg
-            className={`w-4 h-4 text-dashboard-text-muted transition-transform duration-150 ${
-              isOpen ? 'rotate-180' : ''
-            }`}
+            className={`w-4 h-4 text-dashboard-text-muted transition-transform duration-150 ${isOpen ? 'rotate-180' : ''
+              }`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -139,11 +137,10 @@ const FilterDropdown = ({ label, value, options, onChange, placeholder = 'All', 
           {/* "All" option to clear */}
           <button
             onClick={() => handleSelect(null)}
-            className={`flex items-center w-full px-3 py-1.5 text-sm text-left transition-colors duration-150 ${
-              !value
+            className={`flex items-center w-full px-3 py-1.5 text-sm text-left transition-colors duration-150 ${!value
                 ? 'bg-brand-50 text-brand-700 font-medium'
                 : 'text-dashboard-text-secondary hover:bg-gray-50 hover:text-dashboard-text-primary'
-            }`}
+              }`}
             role="option"
             aria-selected={!value}
           >
@@ -155,11 +152,10 @@ const FilterDropdown = ({ label, value, options, onChange, placeholder = 'All', 
             <button
               key={option.value}
               onClick={() => handleSelect(option.value)}
-              className={`flex items-center w-full px-3 py-1.5 text-sm text-left transition-colors duration-150 ${
-                value === option.value
+              className={`flex items-center w-full px-3 py-1.5 text-sm text-left transition-colors duration-150 ${value === option.value
                   ? 'bg-brand-50 text-brand-700 font-medium'
                   : 'text-dashboard-text-secondary hover:bg-gray-50 hover:text-dashboard-text-primary'
-              }`}
+                }`}
               role="option"
               aria-selected={value === option.value}
             >
@@ -225,6 +221,7 @@ const FilterBar = ({
   showReset = true,
   serviceOptions: externalServiceOptions,
   initialFilters,
+  storageKey,
   className = '',
 }) => {
   const {
@@ -246,7 +243,7 @@ const FilterBar = ({
     rootCauseOptions,
     environmentOptions,
     timeRangeOptions,
-  } = useFilters(initialFilters);
+  } = useFilters(initialFilters, storageKey);
 
   // Notify parent of filter changes
   const prevFiltersRef = useRef(filters);
@@ -491,11 +488,10 @@ const FilterBar = ({
           <button
             onClick={handleReset}
             disabled={!hasActiveFilters}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors duration-150 ${
-              hasActiveFilters
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors duration-150 ${hasActiveFilters
                 ? 'text-dashboard-text-secondary hover:bg-gray-100 hover:text-dashboard-text-primary'
                 : 'text-dashboard-text-muted cursor-not-allowed opacity-50'
-            }`}
+              }`}
             aria-label="Reset all filters"
             title="Reset all filters"
           >

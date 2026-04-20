@@ -99,8 +99,8 @@ const TAB_CONFIG = Object.freeze([
  */
 const IncidentAnalyticsPage = () => {
   const {
-    domains,
-    dashboardData,
+    filteredDomains,
+    filteredDashboardData,
     isLoading,
     error,
     lastUpdated,
@@ -150,31 +150,31 @@ const IncidentAnalyticsPage = () => {
    * Get all incidents from dashboard data.
    */
   const allIncidents = useMemo(() => {
-    if (!dashboardData || !dashboardData.incidents) {
+    if (!filteredDashboardData || !filteredDashboardData.incidents) {
       return [];
     }
-    return dashboardData.incidents;
-  }, [dashboardData]);
+    return filteredDashboardData.incidents;
+  }, [filteredDashboardData]);
 
   /**
    * Get all deployment events from dashboard data.
    */
   const allDeployments = useMemo(() => {
-    if (!dashboardData || !dashboardData.deployment_events) {
+    if (!filteredDashboardData || !filteredDashboardData.deployment_events) {
       return [];
     }
-    return dashboardData.deployment_events;
-  }, [dashboardData]);
+    return filteredDashboardData.deployment_events;
+  }, [filteredDashboardData]);
 
   /**
-   * Flatten all services from domains with domain metadata attached.
+   * Flatten all services from filteredDomains with domain metadata attached.
    */
   const allServices = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return [];
     }
 
-    return domains.flatMap((domain) =>
+    return filteredDomains.flatMap((domain) =>
       (domain.services || []).map((service) => ({
         ...service,
         domain_id: domain.domain_id,
@@ -182,7 +182,7 @@ const IncidentAnalyticsPage = () => {
         domain_tier: domain.tier,
       })),
     );
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Build service options for the FilterBar service selector.
@@ -331,7 +331,13 @@ const IncidentAnalyticsPage = () => {
     switch (iconKey) {
       case 'summary':
         return (
-          <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg
+            className={baseClass}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -341,7 +347,13 @@ const IncidentAnalyticsPage = () => {
         );
       case 'trend':
         return (
-          <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg
+            className={baseClass}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -351,7 +363,13 @@ const IncidentAnalyticsPage = () => {
         );
       case 'rca':
         return (
-          <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg
+            className={baseClass}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -366,7 +384,13 @@ const IncidentAnalyticsPage = () => {
         );
       case 'patterns':
         return (
-          <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg
+            className={baseClass}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -376,7 +400,13 @@ const IncidentAnalyticsPage = () => {
         );
       case 'correlation':
         return (
-          <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg
+            className={baseClass}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -386,7 +416,13 @@ const IncidentAnalyticsPage = () => {
         );
       default:
         return (
-          <svg className={baseClass} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg
+            className={baseClass}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -421,7 +457,7 @@ const IncidentAnalyticsPage = () => {
   }
 
   // Error state
-  if (error && !dashboardData) {
+  if (error && !filteredDashboardData) {
     return (
       <div className="flex items-center justify-center min-h-screen-content">
         <EmptyState
@@ -500,11 +536,12 @@ const IncidentAnalyticsPage = () => {
         showSearch={false}
         showReset={true}
         serviceOptions={serviceOptions}
+        storageKey="filters_incident_analytics"
         className="mb-2"
       />
 
       {/* Error banner (non-blocking) */}
-      {error && dashboardData && (
+      {error && filteredDashboardData && (
         <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-yellow-50/50 border border-yellow-200 animate-fade-in">
           <svg
             className="w-5 h-5 text-status-degraded flex-shrink-0 mt-0.5"
@@ -557,9 +594,7 @@ const IncidentAnalyticsPage = () => {
             }
             trend={{
               direction:
-                overallSummary.avgMTTR != null && overallSummary.avgMTTR <= 30
-                  ? 'stable'
-                  : 'up',
+                overallSummary.avgMTTR != null && overallSummary.avgMTTR <= 30 ? 'stable' : 'up',
               invertColor: false,
             }}
           />
@@ -569,9 +604,7 @@ const IncidentAnalyticsPage = () => {
             unit="min"
             size="md"
             status={
-              overallSummary.avgMTTD != null && overallSummary.avgMTTD > 30
-                ? 'warning'
-                : undefined
+              overallSummary.avgMTTD != null && overallSummary.avgMTTD > 30 ? 'warning' : undefined
             }
           />
           <MetricCard
@@ -588,9 +621,7 @@ const IncidentAnalyticsPage = () => {
             }
             trend={{
               direction:
-                overallSummary.avgMTBF != null && overallSummary.avgMTBF >= 500
-                  ? 'stable'
-                  : 'down',
+                overallSummary.avgMTBF != null && overallSummary.avgMTBF >= 500 ? 'stable' : 'down',
               invertColor: true,
             }}
           />
@@ -682,7 +713,8 @@ const IncidentAnalyticsPage = () => {
             })}
             {overallSummary.domainsAffected > 0 && (
               <span>
-                {overallSummary.domainsAffected} domain{overallSummary.domainsAffected !== 1 ? 's' : ''} affected
+                {overallSummary.domainsAffected} domain
+                {overallSummary.domainsAffected !== 1 ? 's' : ''} affected
               </span>
             )}
           </div>
@@ -795,7 +827,7 @@ const IncidentAnalyticsPage = () => {
       )}
 
       {/* No incidents state */}
-      {allIncidents.length === 0 && dashboardData && (
+      {allIncidents.length === 0 && filteredDashboardData && (
         <section aria-label="No Incidents">
           <div className="dashboard-card overflow-hidden">
             <div className="flex flex-col items-center gap-3 py-16">
@@ -817,7 +849,8 @@ const IncidentAnalyticsPage = () => {
               </h3>
               <p className="text-sm text-dashboard-text-muted text-center max-w-md">
                 No incident data is available. Upload incident data to populate the analytics views
-                with severity breakdowns, MTTR/MTTD trends, RCA analysis, and failure pattern detection.
+                with severity breakdowns, MTTR/MTTD trends, RCA analysis, and failure pattern
+                detection.
               </p>
             </div>
           </div>
@@ -828,15 +861,18 @@ const IncidentAnalyticsPage = () => {
       <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-dashboard-text-muted">
         <div className="flex items-center gap-3">
           <span>
-            {overallSummary.totalIncidents} incident{overallSummary.totalIncidents !== 1 ? 's' : ''} total
+            {overallSummary.totalIncidents} incident{overallSummary.totalIncidents !== 1 ? 's' : ''}{' '}
+            total
           </span>
           <span>·</span>
           <span>
-            {overallSummary.totalDeployments} deployment{overallSummary.totalDeployments !== 1 ? 's' : ''}
+            {overallSummary.totalDeployments} deployment
+            {overallSummary.totalDeployments !== 1 ? 's' : ''}
           </span>
           <span>·</span>
           <span>
-            {domains?.length || 0} domain{(domains?.length || 0) !== 1 ? 's' : ''} monitored
+            {filteredDomains?.length || 0} domain{(filteredDomains?.length || 0) !== 1 ? 's' : ''}{' '}
+            monitored
           </span>
           {overallSummary.p1Count > 0 && (
             <>
@@ -848,11 +884,7 @@ const IncidentAnalyticsPage = () => {
           )}
         </div>
         <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span>
-              Last refresh: {formatTimestamp(lastUpdated)}
-            </span>
-          )}
+          {lastUpdated && <span>Last refresh: {formatTimestamp(lastUpdated)}</span>}
         </div>
       </div>
     </div>

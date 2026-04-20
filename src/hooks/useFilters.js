@@ -56,7 +56,9 @@ const DEFAULT_FILTERS = Object.freeze({
  *   timeRangeOptions: Object[],
  * }}
  */
-const useFilters = (initialOverrides) => {
+const useFilters = (initialOverrides, storageKey) => {
+  const resolvedKey = storageKey || FILTERS_STORAGE_KEY;
+
   const defaultState = useMemo(() => {
     if (initialOverrides && typeof initialOverrides === 'object') {
       return { ...DEFAULT_FILTERS, ...initialOverrides };
@@ -65,7 +67,7 @@ const useFilters = (initialOverrides) => {
   }, [initialOverrides]);
 
   const [filters, setStoredFilters, removeStoredFilters] = useLocalStorage(
-    FILTERS_STORAGE_KEY,
+    resolvedKey,
     defaultState,
   );
 

@@ -426,11 +426,10 @@ const DependencyMapPage = () => {
           {/* Incident Overlay Toggle */}
           <button
             onClick={handleIncidentOverlayToggle}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-150 ${
-              incidentOverlayEnabled
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-150 ${incidentOverlayEnabled
                 ? 'bg-red-50 text-severity-critical border-red-200 ring-2 ring-red-500/20'
                 : 'bg-white text-dashboard-text-secondary border-dashboard-border hover:bg-gray-50 hover:text-dashboard-text-primary'
-            }`}
+              }`}
             aria-pressed={incidentOverlayEnabled}
             aria-label={
               incidentOverlayEnabled
@@ -455,11 +454,10 @@ const DependencyMapPage = () => {
             Incident Overlay
             {incidentServiceCount > 0 && (
               <span
-                className={`inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded-full text-[10px] font-semibold ${
-                  incidentOverlayEnabled
+                className={`inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded-full text-[10px] font-semibold ${incidentOverlayEnabled
                     ? 'bg-severity-critical text-white'
                     : 'bg-gray-100 text-dashboard-text-muted'
-                }`}
+                  }`}
               >
                 {incidentServiceCount}
               </span>
@@ -470,11 +468,10 @@ const DependencyMapPage = () => {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-150 ${
-              isRefreshing
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-150 ${isRefreshing
                 ? 'bg-gray-50 text-dashboard-text-muted border-dashboard-border cursor-not-allowed'
                 : 'bg-white text-dashboard-text-secondary border-dashboard-border hover:bg-gray-50 hover:text-dashboard-text-primary'
-            }`}
+              }`}
             aria-label="Refresh dependency map data"
           >
             <svg
@@ -506,6 +503,7 @@ const DependencyMapPage = () => {
         showRootCause={false}
         showSearch={false}
         showReset={true}
+        storageKey="filters_dependency_map"
         className="mb-2"
       />
 
@@ -651,22 +649,20 @@ const DependencyMapPage = () => {
                       handleServiceSelect(service.service_id);
                       setSearchQuery('');
                     }}
-                    className={`flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${
-                      isSelected
+                    className={`flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors duration-150 ${isSelected
                         ? 'bg-brand-50 text-brand-700 font-medium'
                         : 'text-dashboard-text-secondary hover:bg-gray-50 hover:text-dashboard-text-primary'
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
-                        service.status === SERVICE_STATUS.HEALTHY
+                      className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${service.status === SERVICE_STATUS.HEALTHY
                           ? 'bg-status-healthy'
                           : service.status === SERVICE_STATUS.DEGRADED
                             ? 'bg-status-degraded'
                             : service.status === SERVICE_STATUS.DOWN
                               ? 'bg-status-down animate-pulse'
                               : 'bg-status-unknown'
-                      }`}
+                        }`}
                     />
                     <div className="min-w-0 flex-1">
                       <span className="text-sm font-medium text-dashboard-text-primary truncate block">
@@ -684,11 +680,10 @@ const DependencyMapPage = () => {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {service.availability != null && (
                         <span
-                          className={`text-xs font-medium ${
-                            service.availability >= (DEFAULT_SLA_TARGETS[service.domain_tier] ?? 99.9)
+                          className={`text-xs font-medium ${service.availability >= (DEFAULT_SLA_TARGETS[service.domain_tier] ?? 99.9)
                               ? 'text-status-healthy'
                               : 'text-severity-critical'
-                          }`}
+                            }`}
                         >
                           {formatPercentage(service.availability, 2)}
                         </span>
@@ -711,9 +706,8 @@ const DependencyMapPage = () => {
         <div className="flex gap-6">
           {/* Dependency Map (full width or reduced when panel is open) */}
           <div
-            className={`flex-1 min-w-0 transition-all duration-300 ${
-              isDetailPanelOpen && selectedService ? 'lg:mr-0' : ''
-            }`}
+            className={`flex-1 min-w-0 transition-all duration-300 ${isDetailPanelOpen && selectedService ? 'lg:mr-0' : ''
+              }`}
           >
             <DependencyMap
               compact={false}
@@ -865,24 +859,22 @@ const DependencyMapPage = () => {
                       return (
                         <tr
                           key={service.service_id}
-                          className={`transition-colors duration-150 ${
-                            isSelected
+                          className={`transition-colors duration-150 ${isSelected
                               ? 'bg-brand-50/50'
                               : 'hover:bg-gray-50/50'
-                          }`}
+                            }`}
                         >
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2 min-w-0">
                               <span
-                                className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
-                                  service.status === SERVICE_STATUS.HEALTHY
+                                className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${service.status === SERVICE_STATUS.HEALTHY
                                     ? 'bg-status-healthy'
                                     : service.status === SERVICE_STATUS.DEGRADED
                                       ? 'bg-status-degraded'
                                       : service.status === SERVICE_STATUS.DOWN
                                         ? 'bg-status-down animate-pulse'
                                         : 'bg-status-unknown'
-                                }`}
+                                  }`}
                               />
                               <span className="text-sm font-medium text-dashboard-text-primary truncate">
                                 {service.name || service.service_id}
@@ -904,15 +896,14 @@ const DependencyMapPage = () => {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <span
-                              className={`text-sm font-semibold ${
-                                service.availability != null &&
-                                service.availability >= slaTarget
+                              className={`text-sm font-semibold ${service.availability != null &&
+                                  service.availability >= slaTarget
                                   ? 'text-status-healthy'
                                   : service.availability != null &&
-                                      service.availability >= slaTarget - 0.1
+                                    service.availability >= slaTarget - 0.1
                                     ? 'text-status-degraded'
                                     : 'text-severity-critical'
-                              }`}
+                                }`}
                             >
                               {service.availability != null
                                 ? formatPercentage(service.availability, 2)
@@ -921,15 +912,14 @@ const DependencyMapPage = () => {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <span
-                              className={`text-sm font-medium ${
-                                service.error_budget != null &&
-                                service.error_budget <= 10
+                              className={`text-sm font-medium ${service.error_budget != null &&
+                                  service.error_budget <= 10
                                   ? 'text-severity-critical'
                                   : service.error_budget != null &&
-                                      service.error_budget <= 25
+                                    service.error_budget <= 25
                                     ? 'text-status-degraded'
                                     : 'text-dashboard-text-secondary'
-                              }`}
+                                }`}
                             >
                               {service.error_budget != null
                                 ? formatPercentage(service.error_budget, 1)
@@ -953,11 +943,10 @@ const DependencyMapPage = () => {
                               onClick={() =>
                                 handleServiceSelect(service.service_id)
                               }
-                              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-colors duration-150 ${
-                                isSelected
+                              className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-colors duration-150 ${isSelected
                                   ? 'bg-brand-100 text-brand-700'
                                   : 'text-brand-600 hover:bg-brand-50 hover:text-brand-700'
-                              }`}
+                                }`}
                               aria-label={`View details for ${service.name}`}
                             >
                               <svg

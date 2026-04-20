@@ -273,11 +273,10 @@ const CompliancePage = () => {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-150 ${
-              isRefreshing
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-150 ${isRefreshing
                 ? 'bg-gray-50 text-dashboard-text-muted border-dashboard-border cursor-not-allowed'
                 : 'bg-white text-dashboard-text-secondary border-dashboard-border hover:bg-gray-50 hover:text-dashboard-text-primary'
-            }`}
+              }`}
             aria-label="Refresh compliance data"
           >
             <svg
@@ -309,6 +308,7 @@ const CompliancePage = () => {
         showRootCause={false}
         showSearch={false}
         showReset={true}
+        storageKey="filters_compliance"
         className="mb-2"
       />
 
@@ -405,11 +405,10 @@ const CompliancePage = () => {
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors duration-150 ${
-                  isActive
+                className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-colors duration-150 ${isActive
                     ? 'bg-brand-50 text-brand-700 border-brand-200 ring-2 ring-brand-500/20'
                     : 'bg-white text-dashboard-text-muted border-dashboard-border hover:bg-gray-50 hover:text-dashboard-text-secondary hover:border-gray-300'
-                }`}
+                  }`}
                 aria-pressed={isActive}
                 aria-label={`View ${tab.label}`}
                 title={tab.description}
