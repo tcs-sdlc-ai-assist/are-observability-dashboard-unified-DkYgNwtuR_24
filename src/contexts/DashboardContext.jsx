@@ -18,7 +18,6 @@ import {
   getChangeFailureRate,
 } from '../services/dataService';
 import { TIME_RANGES } from '../constants/metrics';
-import { getTimeRange, isWithinRange } from '../utils/dateUtils';
 
 const DashboardContext = createContext(null);
 
@@ -584,175 +583,6 @@ const DashboardProvider = ({ children }) => {
 
   // ─── Derived Data ──────────────────────────────────────────────────────
 
-  const filterDomains = useCallback((domains = [], filters = {}) => {
-    if (!Array.isArray(domains) || domains.length === 0) {
-      return [];
-    }
-
-    let filtered = domains;
-
-    if (filters.domainId) {
-      filtered = filtered.filter((domain) => domain.domain_id === filters.domainId);
-    }
-
-    if (filters.tier) {
-      filtered = filtered.filter((domain) => domain.tier === filters.tier);
-    }
-
-    if (filters.serviceId) {
-      filtered = filtered
-        .map((domain) => ({
-          ...domain,
-          services: (domain.services || []).filter(
-            (service) => service.service_id === filters.serviceId,
-          ),
-        }))
-        .filter((domain) => (domain.services || []).length > 0);
-    }
-
-    return filtered;
-  }, []);
-
-  const getFilteredServiceIds = useCallback((domains = [], filters = {}) => {
-    const serviceIds = new Set();
-
-    if (!Array.isArray(domains) || domains.length === 0) {
-      return serviceIds;
-    }
-
-    for (const domain of domains) {
-      for (const service of domain.services || []) {
-        if (filters.serviceId && service.service_id !== filters.serviceId) {
-          continue;
-        }
-        serviceIds.add(service.service_id);
-      }
-    }
-
-    return serviceIds;
-  }, []);
-
-  const filterGoldenSignalTimeSeries = useCallback(
-    (timeSeries = {}, domains = [], filters = {}) => {
-      if (!timeSeries || typeof timeSeries !== 'object') {
-        return {};
-      }
-
-      const allowedServiceIds = getFilteredServiceIds(domains, filters);
-      const { timeRangeKey } = filters || {};
-      let timeFilter = null;
-
-      if (timeRangeKey) {
-        const { start, end } = getTimeRange(timeRangeKey);
-        timeFilter = (point) => point && point.timestamp && isWithinRange(point.timestamp, start, end);
-      }
-
-      const filterSeriesNode = (node) => {
-        if (Array.isArray(node)) {
-          const filteredPoints = timeFilter ? node.filter(timeFilter) : node;
-          return filteredPoints.length > 0 ? filteredPoints : null;
-        }
-
-        if (!node || typeof node !== 'object') {
-          return null;
-        }
-
-        const filteredNode = Object.entries(node).reduce((acc, [key, value]) => {
-          const filteredValue = filterSeriesNode(value);
-
-          if (filteredValue) {
-            acc[key] = filteredValue;
-          }
-
-          return acc;
-        }, {});
-
-        return Object.keys(filteredNode).length > 0 ? filteredNode : null;
-      };
-
-      return Object.entries(timeSeries).reduce((result, [serviceId, serviceSeries]) => {
-        if (filters.serviceId && serviceId !== filters.serviceId) {
-          return result;
-        }
-
-        if (allowedServiceIds.size > 0 && !allowedServiceIds.has(serviceId)) {
-          return result;
-        }
-
-        const filteredSeries = filterSeriesNode(serviceSeries);
-
-        if (filteredSeries) {
-          result[serviceId] = filteredSeries;
-        }
-
-        return result;
-      }, {});
-    },
-    [getFilteredServiceIds],
-  );
-
-  const filterIncidents = useCallback((incidents = [], filters = {}) => {
-    if (!Array.isArray(incidents) || incidents.length === 0) {
-      return [];
-    }
-
-    let filtered = incidents;
-
-    if (filters.domainId) {
-      filtered = filtered.filter((incident) => incident.domain_id === filters.domainId);
-    }
-
-    if (filters.serviceId) {
-      filtered = filtered.filter((incident) => incident.service_id === filters.serviceId);
-    }
-
-    if (filters.severity) {
-      filtered = filtered.filter((incident) => incident.severity === filters.severity);
-    }
-
-    if (filters.rootCause) {
-      filtered = filtered.filter((incident) => incident.root_cause === filters.rootCause);
-    }
-
-    if (filters.status) {
-      filtered = filtered.filter((incident) => incident.status === filters.status);
-    }
-
-    if (filters.timeRangeKey) {
-      const { start, end } = getTimeRange(filters.timeRangeKey);
-      filtered = filtered.filter(
-        (incident) => incident.start_time && isWithinRange(incident.start_time, start, end),
-      );
-    }
-
-    return filtered;
-  }, []);
-
-  const filterDeployments = useCallback((deployments = [], filters = {}) => {
-    if (!Array.isArray(deployments) || deployments.length === 0) {
-      return [];
-    }
-
-    let filtered = deployments;
-
-    if (filters.domainId) {
-      filtered = filtered.filter((deployment) => deployment.domain_id === filters.domainId);
-    }
-
-    if (filters.serviceId) {
-      filtered = filtered.filter((deployment) => deployment.service_id === filters.serviceId);
-    }
-
-    if (filters.timeRangeKey) {
-      const { start, end } = getTimeRange(filters.timeRangeKey);
-      filtered = filtered.filter(
-        (deployment) => deployment.timestamp && isWithinRange(deployment.timestamp, start, end),
-      );
-    }
-
-    return filtered;
-  }, []);
-
   const domains = useMemo(() => {
     if (!state.dashboardData || !state.dashboardData.domains) {
       return [];
@@ -760,39 +590,6 @@ const DashboardProvider = ({ children }) => {
 
     return state.dashboardData.domains;
   }, [state.dashboardData]);
-
-  const filteredDomains = useMemo(
-    () => filterDomains(state.dashboardData?.domains || [], state.filters),
-    [filterDomains, state.dashboardData, state.filters],
-  );
-
-  const filteredIncidents = useMemo(
-    () => filterIncidents(state.dashboardData?.incidents || [], state.filters),
-    [filterIncidents, state.dashboardData, state.filters],
-  );
-
-  const filteredDeployments = useMemo(
-    () => filterDeployments(state.dashboardData?.deployment_events || [], state.filters),
-    [filterDeployments, state.dashboardData, state.filters],
-  );
-
-  const filteredDashboardData = useMemo(() => {
-    if (!state.dashboardData) {
-      return null;
-    }
-
-    return {
-      ...state.dashboardData,
-      domains: filteredDomains,
-      incidents: filteredIncidents,
-      deployment_events: filteredDeployments,
-      golden_signal_time_series: filterGoldenSignalTimeSeries(
-        state.dashboardData?.golden_signal_time_series || {},
-        state.dashboardData?.domains || [],
-        state.filters,
-      ),
-    };
-  }, [state.dashboardData, filteredDomains, filteredIncidents, filteredDeployments, filterGoldenSignalTimeSeries, state.filters]);
 
   const incidentSummary = useMemo(() => {
     if (!state.dashboardData || !state.dashboardData.incident_summary) {
@@ -824,7 +621,6 @@ const DashboardProvider = ({ children }) => {
     () => ({
       // State
       dashboardData: state.dashboardData,
-      filteredDashboardData,
       isLoading: state.isLoading,
       error: state.error,
       filters: state.filters,
@@ -832,9 +628,6 @@ const DashboardProvider = ({ children }) => {
 
       // Derived data
       domains,
-      filteredDomains,
-      filteredIncidents,
-      filteredDeployments,
       incidentSummary,
       changeFailureRate,
       dependencyGraph,
@@ -881,10 +674,6 @@ const DashboardProvider = ({ children }) => {
       clearError,
       uploadData,
       updateThresholds,
-      filteredDashboardData,
-      filteredDomains,
-      filteredIncidents,
-      filteredDeployments,
       fetchIncidentTrends,
       fetchServiceDependencyMap,
       fetchErrorBudgets,
