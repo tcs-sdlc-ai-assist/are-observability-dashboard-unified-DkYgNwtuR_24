@@ -647,6 +647,29 @@ const DashboardProvider = ({ children }) => {
         timeFilter = (point) => point && point.timestamp && isWithinRange(point.timestamp, start, end);
       }
 
+      const filterSeriesNode = (node) => {
+        if (Array.isArray(node)) {
+          const filteredPoints = timeFilter ? node.filter(timeFilter) : node;
+          return filteredPoints.length > 0 ? filteredPoints : null;
+        }
+
+        if (!node || typeof node !== 'object') {
+          return null;
+        }
+
+        const filteredNode = Object.entries(node).reduce((acc, [key, value]) => {
+          const filteredValue = filterSeriesNode(value);
+
+          if (filteredValue) {
+            acc[key] = filteredValue;
+          }
+
+          return acc;
+        }, {});
+
+        return Object.keys(filteredNode).length > 0 ? filteredNode : null;
+      };
+
       return Object.entries(timeSeries).reduce((result, [serviceId, serviceSeries]) => {
         if (filters.serviceId && serviceId !== filters.serviceId) {
           return result;
@@ -656,19 +679,9 @@ const DashboardProvider = ({ children }) => {
           return result;
         }
 
-        const filteredSeries = {};
+        const filteredSeries = filterSeriesNode(serviceSeries);
 
-        for (const [signalType, series] of Object.entries(serviceSeries || {})) {
-          if (!Array.isArray(series) || series.length === 0) {
-            continue;
-          }
-
-          filteredSeries[signalType] = timeFilter
-            ? series.filter(timeFilter)
-            : series;
-        }
-
-        if (Object.keys(filteredSeries).length > 0) {
+        if (filteredSeries) {
           result[serviceId] = filteredSeries;
         }
 
