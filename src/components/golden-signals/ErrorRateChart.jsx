@@ -141,7 +141,7 @@ const ErrorRateChart = ({
 
     // Fallback to first service
     return allServices.length > 0 ? allServices[0].service_id : null;
-  }, [activeServiceId, allServices, dashboardData]);
+  }, [activeServiceId, allServices, filteredDashboardData]);
 
   /**
    * Get the active service object.
@@ -165,7 +165,7 @@ const ErrorRateChart = ({
     }
 
     return serviceTimeSeries[GOLDEN_SIGNALS.ERRORS];
-  }, [resolvedServiceId, dashboardData]);
+  }, [resolvedServiceId, filteredDashboardData]);
 
   /**
    * Build Recharts-compatible chart data from the error time series.
@@ -608,7 +608,7 @@ const ErrorRateChart = ({
                           {tierGroup.services.map((service) => {
                             const isActive = service.service_id === resolvedServiceId;
                             const hasTimeSeries =
-                              dashboardData?.golden_signal_time_series?.[service.service_id]?.[
+                              filteredDashboardData?.golden_signal_time_series?.[service.service_id]?.[
                                 GOLDEN_SIGNALS.ERRORS
                               ] != null;
 

@@ -659,13 +659,37 @@ const DashboardProvider = ({ children }) => {
         const filteredSeries = {};
 
         for (const [signalType, series] of Object.entries(serviceSeries || {})) {
-          if (!Array.isArray(series) || series.length === 0) {
+          if (!series || typeof series !== 'object') {
             continue;
           }
 
-          filteredSeries[signalType] = timeFilter
-            ? series.filter(timeFilter)
-            : series;
+          if (Array.isArray(series)) {
+            const filteredPoints = timeFilter ? series.filter(timeFilter) : series;
+
+            if (filteredPoints.length > 0) {
+              filteredSeries[signalType] = filteredPoints;
+            }
+
+            continue;
+          }
+
+          const filteredMetrics = Object.entries(series).reduce((metrics, [metricKey, points]) => {
+            if (!Array.isArray(points) || points.length === 0) {
+              return metrics;
+            }
+
+            const filteredPoints = timeFilter ? points.filter(timeFilter) : points;
+
+            if (filteredPoints.length > 0) {
+              metrics[metricKey] = filteredPoints;
+            }
+
+            return metrics;
+          }, {});
+
+          if (Object.keys(filteredMetrics).length > 0) {
+            filteredSeries[signalType] = filteredMetrics;
+          }
         }
 
         if (Object.keys(filteredSeries).length > 0) {
