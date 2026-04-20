@@ -6,6 +6,7 @@ import { ROLE_LABELS } from '../constants/roles';
 import { isSSOEnabled } from '../services/ssoProvider';
 import { StatusBadge } from '../components/shared/StatusBadge';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
+import logoUrl from '../assets/logo.png';
 
 /**
  * LoginPage - User authentication login screen with email/password form,
@@ -232,30 +233,13 @@ const LoginPage = () => {
       <div className="w-full max-w-md">
         {/* Branding Header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-600 mb-4 shadow-panel">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-dashboard-text-primary tracking-tight">
-            Horizon
-          </h1>
-          <p className="text-sm text-dashboard-text-muted mt-1">
+          <img
+            src={logoUrl}
+            alt="Horizon Logo"
+            className="object-contain bg-white rounded-md p-2 shadow-sm mb-3"
+            style={{ width: '204px', height: '72px' }}
+          />
+          <p className="text-sm text-dashboard-text-muted">
             ARE Observability Dashboard
           </p>
         </div>
