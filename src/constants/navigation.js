@@ -27,7 +27,7 @@ const NAV_ITEMS = Object.freeze([
   {
     key: 'qe-dashboard',
     label: 'QE Dashboard',
-    url: 'https://qe.com',
+    url: 'https://qe-hub-portal-20260414090204.vercel.app/login',
     icon: 'dashboard',
     section: NAV_SECTIONS.MAIN,
     permissions: [PERMISSIONS.VIEW_DASHBOARD],
@@ -36,7 +36,7 @@ const NAV_ITEMS = Object.freeze([
   {
     key: 'ad-dashboard',
     label: 'AD Dashboard',
-    url: 'https://ad.com',
+    url: 'https://horizon-healthcare-dashboards-20260.vercel.app/',
     icon: 'dashboard',
     section: NAV_SECTIONS.MAIN,
     permissions: [PERMISSIONS.VIEW_DASHBOARD],
