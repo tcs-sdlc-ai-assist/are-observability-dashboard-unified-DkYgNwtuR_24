@@ -36,33 +36,36 @@ import { formatPercentage, formatNumber } from '../../utils/formatters';
  * @returns {React.ReactNode}
  */
 const AvailabilityOverview = ({ className = '', showServiceDetail = true, compact = false }) => {
-  const { domains, isLoading, error } = useDashboard();
+  const { filteredDomains, isLoading, error } = useDashboard();
   const [expandedDomains, setExpandedDomains] = useState({});
 
   /**
    * Toggle the expanded state of a domain card.
    * @param {string} domainId - The domain ID to toggle.
    */
-  const toggleDomain = useCallback((domainId) => {
-    if (!showServiceDetail) {
-      return;
-    }
+  const toggleDomain = useCallback(
+    (domainId) => {
+      if (!showServiceDetail) {
+        return;
+      }
 
-    setExpandedDomains((prev) => ({
-      ...prev,
-      [domainId]: !prev[domainId],
-    }));
-  }, [showServiceDetail]);
+      setExpandedDomains((prev) => ({
+        ...prev,
+        [domainId]: !prev[domainId],
+      }));
+    },
+    [showServiceDetail],
+  );
 
   /**
    * Compute overall platform availability as a weighted average across all services.
    */
   const overallAvailability = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return null;
     }
 
-    const allServices = domains.flatMap((domain) => domain.services || []);
+    const allServices = filteredDomains.flatMap((domain) => domain.services || []);
 
     if (allServices.length === 0) {
       return null;
@@ -74,18 +77,18 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
     );
 
     return parseFloat((totalAvailability / allServices.length).toFixed(2));
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Compute sparkline data from service availabilities for the overall metric card.
    */
   const overallSparkData = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return null;
     }
 
     // Generate spark data from per-domain average availabilities
-    const domainAvgs = domains
+    const domainAvgs = filteredDomains
       .map((domain) => {
         const services = domain.services || [];
         if (services.length === 0) return null;
@@ -95,19 +98,19 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
       .filter((v) => v !== null);
 
     return domainAvgs.length >= 2 ? domainAvgs : null;
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Group domains by tier and compute tier-level aggregates.
    */
   const tierGroups = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return [];
     }
 
     const tierMap = new Map();
 
-    for (const domain of domains) {
+    for (const domain of filteredDomains) {
       const tier = domain.tier || DOMAIN_TIERS.SUPPORTING;
 
       if (!tierMap.has(tier)) {
@@ -180,13 +183,13 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
 
     // Sort by tier order
     return Array.from(tierMap.values()).sort((a, b) => a.order - b.order);
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Compute summary counts for the overview header.
    */
   const summary = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return {
         totalDomains: 0,
         totalServices: 0,
@@ -203,7 +206,7 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
     let downServices = 0;
     let slaBreaches = 0;
 
-    for (const domain of domains) {
+    for (const domain of filteredDomains) {
       const services = domain.services || [];
       const tier = domain.tier || DOMAIN_TIERS.SUPPORTING;
       const slaTarget = DEFAULT_SLA_TARGETS[tier] ?? 99.9;
@@ -222,14 +225,14 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
     }
 
     return {
-      totalDomains: domains.length,
+      totalDomains: filteredDomains.length,
       totalServices,
       healthyServices,
       degradedServices,
       downServices,
       slaBreaches,
     };
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Determine the overall platform health status.
@@ -290,7 +293,7 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
   }
 
   // Empty state
-  if (!domains || domains.length === 0) {
+  if (!filteredDomains || filteredDomains.length === 0) {
     return (
       <div className={`${className}`}>
         <EmptyState
@@ -342,7 +345,9 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
       </div>
 
       {/* Top-Level Metric Cards */}
-      <div className={`grid gap-4 mb-6 ${compact ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
+      <div
+        className={`grid gap-4 mb-6 ${compact ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}
+      >
         <MetricCard
           title="Platform Availability"
           value={overallAvailability}
@@ -351,7 +356,8 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
           status={platformStatus}
           sparkData={overallSparkData}
           trend={{
-            direction: overallAvailability != null && overallAvailability >= 99.9 ? 'stable' : 'down',
+            direction:
+              overallAvailability != null && overallAvailability >= 99.9 ? 'stable' : 'down',
             invertColor: true,
           }}
         />
@@ -377,9 +383,7 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
           title="Service Health"
           value={
             summary.totalServices > 0
-              ? parseFloat(
-                  ((summary.healthyServices / summary.totalServices) * 100).toFixed(1),
-                )
+              ? parseFloat(((summary.healthyServices / summary.totalServices) * 100).toFixed(1))
               : 0
           }
           unit="%"
@@ -434,7 +438,9 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
             </div>
 
             {/* Domain Cards Grid */}
-            <div className={`grid gap-3 ${compact ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}>
+            <div
+              className={`grid gap-3 items-stretch ${compact ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}
+            >
               {tierGroup.domains.map((domainData) => {
                 const isExpanded = expandedDomains[domainData.domain_id] || false;
                 const domainStatus = getDomainStatus(domainData);
@@ -442,14 +448,16 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
                 return (
                   <div
                     key={domainData.domain_id}
-                    className={`dashboard-card overflow-hidden ${
+                    className={`dashboard-card overflow-hidden h-full ${
                       showServiceDetail ? 'cursor-pointer' : ''
                     }`}
                   >
                     {/* Domain Header */}
                     <div
                       className={`flex items-center justify-between gap-3 p-4 ${
-                        showServiceDetail ? 'hover:bg-gray-50/50 transition-colors duration-150' : ''
+                        showServiceDetail
+                          ? 'hover:bg-gray-50/50 transition-colors duration-150'
+                          : ''
                       }`}
                       onClick={() => toggleDomain(domainData.domain_id)}
                       onKeyDown={(e) => {
@@ -634,7 +642,8 @@ const AvailabilityOverview = ({ className = '', showServiceDetail = true, compac
                                         className={`font-medium ${
                                           service.error_budget != null && service.error_budget <= 10
                                             ? 'text-severity-critical'
-                                            : service.error_budget != null && service.error_budget <= 25
+                                            : service.error_budget != null &&
+                                                service.error_budget <= 25
                                               ? 'text-status-degraded'
                                               : 'text-dashboard-text-secondary'
                                         }`}

@@ -70,7 +70,7 @@ const SaturationChart = ({
   showMetricCards = true,
   chartHeight = 280,
 }) => {
-  const { domains, dashboardData, isLoading, error } = useDashboard();
+  const { filteredDomains, filteredDashboardData, isLoading, error } = useDashboard();
   const [activeServiceId, setActiveServiceId] = useState(selectedServiceId);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
@@ -78,11 +78,11 @@ const SaturationChart = ({
    * Flatten all services from domains with domain metadata attached.
    */
   const allServices = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return [];
     }
 
-    return domains.flatMap((domain) =>
+    return filteredDomains.flatMap((domain) =>
       (domain.services || []).map((service) => ({
         ...service,
         domain_id: domain.domain_id,
@@ -90,7 +90,7 @@ const SaturationChart = ({
         domain_tier: domain.tier,
       })),
     );
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Group services by domain tier for the selector dropdown.
@@ -131,7 +131,7 @@ const SaturationChart = ({
     }
 
     // Find the first service that has time series data
-    const timeSeries = dashboardData?.golden_signal_time_series;
+    const timeSeries = filteredDashboardData?.golden_signal_time_series;
     if (timeSeries) {
       for (const service of allServices) {
         if (timeSeries[service.service_id]?.[GOLDEN_SIGNALS.SATURATION]) {
@@ -156,11 +156,11 @@ const SaturationChart = ({
    * Get the saturation time series data for the active service.
    */
   const saturationTimeSeries = useMemo(() => {
-    if (!resolvedServiceId || !dashboardData?.golden_signal_time_series) {
+    if (!resolvedServiceId || !filteredDashboardData?.golden_signal_time_series) {
       return null;
     }
 
-    const serviceTimeSeries = dashboardData.golden_signal_time_series[resolvedServiceId];
+    const serviceTimeSeries = filteredDashboardData.golden_signal_time_series[resolvedServiceId];
     if (!serviceTimeSeries || !serviceTimeSeries[GOLDEN_SIGNALS.SATURATION]) {
       return null;
     }
@@ -233,15 +233,14 @@ const SaturationChart = ({
       .filter((v) => v != null && !isNaN(v));
 
     return {
-      cpu: cpuValues.length >= 2
-        ? calculateTrendDirection(cpuValues, { threshold: 5 })
-        : defaultTrend,
-      mem: memValues.length >= 2
-        ? calculateTrendDirection(memValues, { threshold: 5 })
-        : defaultTrend,
-      queue: queueValues.length >= 2
-        ? calculateTrendDirection(queueValues, { threshold: 5 })
-        : defaultTrend,
+      cpu:
+        cpuValues.length >= 2 ? calculateTrendDirection(cpuValues, { threshold: 5 }) : defaultTrend,
+      mem:
+        memValues.length >= 2 ? calculateTrendDirection(memValues, { threshold: 5 }) : defaultTrend,
+      queue:
+        queueValues.length >= 2
+          ? calculateTrendDirection(queueValues, { threshold: 5 })
+          : defaultTrend,
     };
   }, [saturationTimeSeries]);
 
@@ -303,17 +302,29 @@ const SaturationChart = ({
     const queueWarning = thresholds.queue.warning;
 
     if (
-      (cpuCritical != null && currentSaturation.cpu != null && currentSaturation.cpu >= cpuCritical) ||
-      (memCritical != null && currentSaturation.mem != null && currentSaturation.mem >= memCritical) ||
-      (queueCritical != null && currentSaturation.queue != null && currentSaturation.queue >= queueCritical)
+      (cpuCritical != null &&
+        currentSaturation.cpu != null &&
+        currentSaturation.cpu >= cpuCritical) ||
+      (memCritical != null &&
+        currentSaturation.mem != null &&
+        currentSaturation.mem >= memCritical) ||
+      (queueCritical != null &&
+        currentSaturation.queue != null &&
+        currentSaturation.queue >= queueCritical)
     ) {
       return 'critical';
     }
 
     if (
-      (cpuWarning != null && currentSaturation.cpu != null && currentSaturation.cpu >= cpuWarning) ||
-      (memWarning != null && currentSaturation.mem != null && currentSaturation.mem >= memWarning) ||
-      (queueWarning != null && currentSaturation.queue != null && currentSaturation.queue >= queueWarning)
+      (cpuWarning != null &&
+        currentSaturation.cpu != null &&
+        currentSaturation.cpu >= cpuWarning) ||
+      (memWarning != null &&
+        currentSaturation.mem != null &&
+        currentSaturation.mem >= memWarning) ||
+      (queueWarning != null &&
+        currentSaturation.queue != null &&
+        currentSaturation.queue >= queueWarning)
     ) {
       return 'warning';
     }
@@ -365,7 +376,14 @@ const SaturationChart = ({
    */
   const saturationStats = useMemo(() => {
     if (!saturationTimeSeries) {
-      return { avgCpu: null, peakCpu: null, avgMem: null, peakMem: null, avgQueue: null, peakQueue: null };
+      return {
+        avgCpu: null,
+        peakCpu: null,
+        avgMem: null,
+        peakMem: null,
+        avgQueue: null,
+        peakQueue: null,
+      };
     }
 
     const compute = (series) => {
@@ -513,7 +531,7 @@ const SaturationChart = ({
   }
 
   // Empty state — no domains
-  if (!domains || domains.length === 0) {
+  if (!filteredDomains || filteredDomains.length === 0) {
     return (
       <div className={`${className}`}>
         <EmptyState
@@ -690,13 +708,19 @@ const SaturationChart = ({
             <div className="hidden sm:flex items-center gap-3 text-xs text-dashboard-text-muted">
               {thresholds.cpu.warning != null && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-px bg-status-degraded" style={{ borderTop: '2px dashed #ca8a04' }} />
+                  <span
+                    className="inline-block w-4 h-px bg-status-degraded"
+                    style={{ borderTop: '2px dashed #ca8a04' }}
+                  />
                   Warn: {formatNumber(thresholds.cpu.warning, { decimals: 0 })}%
                 </span>
               )}
               {thresholds.cpu.critical != null && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-px bg-severity-critical" style={{ borderTop: '2px dashed #dc2626' }} />
+                  <span
+                    className="inline-block w-4 h-px bg-severity-critical"
+                    style={{ borderTop: '2px dashed #dc2626' }}
+                  />
                   Crit: {formatNumber(thresholds.cpu.critical, { decimals: 0 })}%
                 </span>
               )}
@@ -718,9 +742,11 @@ const SaturationChart = ({
               size="sm"
               status={
                 currentSaturation.cpu != null
-                  ? thresholds.cpu.critical != null && currentSaturation.cpu >= thresholds.cpu.critical
+                  ? thresholds.cpu.critical != null &&
+                    currentSaturation.cpu >= thresholds.cpu.critical
                     ? 'critical'
-                    : thresholds.cpu.warning != null && currentSaturation.cpu >= thresholds.cpu.warning
+                    : thresholds.cpu.warning != null &&
+                        currentSaturation.cpu >= thresholds.cpu.warning
                       ? 'warning'
                       : 'healthy'
                   : undefined
@@ -739,9 +765,11 @@ const SaturationChart = ({
               size="sm"
               status={
                 currentSaturation.mem != null
-                  ? thresholds.mem.critical != null && currentSaturation.mem >= thresholds.mem.critical
+                  ? thresholds.mem.critical != null &&
+                    currentSaturation.mem >= thresholds.mem.critical
                     ? 'critical'
-                    : thresholds.mem.warning != null && currentSaturation.mem >= thresholds.mem.warning
+                    : thresholds.mem.warning != null &&
+                        currentSaturation.mem >= thresholds.mem.warning
                       ? 'warning'
                       : 'healthy'
                   : undefined
@@ -760,9 +788,11 @@ const SaturationChart = ({
               size="sm"
               status={
                 currentSaturation.queue != null
-                  ? thresholds.queue.critical != null && currentSaturation.queue >= thresholds.queue.critical
+                  ? thresholds.queue.critical != null &&
+                    currentSaturation.queue >= thresholds.queue.critical
                     ? 'critical'
-                    : thresholds.queue.warning != null && currentSaturation.queue >= thresholds.queue.warning
+                    : thresholds.queue.warning != null &&
+                        currentSaturation.queue >= thresholds.queue.warning
                       ? 'warning'
                       : 'healthy'
                   : undefined
@@ -855,11 +885,7 @@ const SaturationChart = ({
                     <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#e2e8f0"
-                  vertical={false}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis
                   dataKey="timeLabel"
                   tick={{ fontSize: 10, fill: '#94a3b8' }}

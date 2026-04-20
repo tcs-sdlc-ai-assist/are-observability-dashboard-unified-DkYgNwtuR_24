@@ -69,7 +69,7 @@ const LatencyChart = ({
   showMetricCards = true,
   chartHeight = 280,
 }) => {
-  const { domains, dashboardData, isLoading, error } = useDashboard();
+  const { filteredDomains, filteredDashboardData, isLoading, error } = useDashboard();
   const [activeServiceId, setActiveServiceId] = useState(selectedServiceId);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
@@ -77,11 +77,11 @@ const LatencyChart = ({
    * Flatten all services from domains with domain metadata attached.
    */
   const allServices = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return [];
     }
 
-    return domains.flatMap((domain) =>
+    return filteredDomains.flatMap((domain) =>
       (domain.services || []).map((service) => ({
         ...service,
         domain_id: domain.domain_id,
@@ -89,7 +89,7 @@ const LatencyChart = ({
         domain_tier: domain.tier,
       })),
     );
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Group services by domain tier for the selector dropdown.
@@ -130,7 +130,7 @@ const LatencyChart = ({
     }
 
     // Find the first service that has time series data
-    const timeSeries = dashboardData?.golden_signal_time_series;
+    const timeSeries = filteredDashboardData?.golden_signal_time_series;
     if (timeSeries) {
       for (const service of allServices) {
         if (timeSeries[service.service_id]?.[GOLDEN_SIGNALS.LATENCY]) {
@@ -155,11 +155,11 @@ const LatencyChart = ({
    * Get the latency time series data for the active service.
    */
   const latencyTimeSeries = useMemo(() => {
-    if (!resolvedServiceId || !dashboardData?.golden_signal_time_series) {
+    if (!resolvedServiceId || !filteredDashboardData?.golden_signal_time_series) {
       return null;
     }
 
-    const serviceTimeSeries = dashboardData.golden_signal_time_series[resolvedServiceId];
+    const serviceTimeSeries = filteredDashboardData.golden_signal_time_series[resolvedServiceId];
     if (!serviceTimeSeries || !serviceTimeSeries[GOLDEN_SIGNALS.LATENCY]) {
       return null;
     }
@@ -227,12 +227,10 @@ const LatencyChart = ({
       .filter((v) => v != null && !isNaN(v));
 
     return {
-      p95: p95Values.length >= 2
-        ? calculateTrendDirection(p95Values, { threshold: 5 })
-        : defaultTrend,
-      p99: p99Values.length >= 2
-        ? calculateTrendDirection(p99Values, { threshold: 5 })
-        : defaultTrend,
+      p95:
+        p95Values.length >= 2 ? calculateTrendDirection(p95Values, { threshold: 5 }) : defaultTrend,
+      p99:
+        p99Values.length >= 2 ? calculateTrendDirection(p99Values, { threshold: 5 }) : defaultTrend,
     };
   }, [latencyTimeSeries]);
 
@@ -371,8 +369,7 @@ const LatencyChart = ({
           {payload.map((entry) => {
             const metricKey = entry.dataKey;
             const value = entry.value;
-            const threshold =
-              metricKey === 'latency_p95' ? thresholds.p95 : thresholds.p99;
+            const threshold = metricKey === 'latency_p95' ? thresholds.p95 : thresholds.p99;
 
             let statusLabel = 'Normal';
             let statusColorClass = 'text-status-healthy';
@@ -431,7 +428,7 @@ const LatencyChart = ({
   }
 
   // Empty state — no domains
-  if (!domains || domains.length === 0) {
+  if (!filteredDomains || filteredDomains.length === 0) {
     return (
       <div className={`${className}`}>
         <EmptyState
@@ -608,13 +605,19 @@ const LatencyChart = ({
             <div className="hidden sm:flex items-center gap-3 text-xs text-dashboard-text-muted">
               {thresholds.p95.warning != null && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-px bg-status-degraded" style={{ borderTop: '2px dashed #ca8a04' }} />
+                  <span
+                    className="inline-block w-4 h-px bg-status-degraded"
+                    style={{ borderTop: '2px dashed #ca8a04' }}
+                  />
                   Warn: {formatNumber(thresholds.p95.warning, { decimals: 0 })}ms
                 </span>
               )}
               {thresholds.p95.critical != null && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-px bg-severity-critical" style={{ borderTop: '2px dashed #dc2626' }} />
+                  <span
+                    className="inline-block w-4 h-px bg-severity-critical"
+                    style={{ borderTop: '2px dashed #dc2626' }}
+                  />
                   Crit: {formatNumber(thresholds.p95.critical, { decimals: 0 })}ms
                 </span>
               )}
@@ -717,11 +720,7 @@ const LatencyChart = ({
                   bottom: 0,
                 }}
               >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#e2e8f0"
-                  vertical={false}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis
                   dataKey="timeLabel"
                   tick={{ fontSize: 10, fill: '#94a3b8' }}

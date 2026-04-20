@@ -53,7 +53,7 @@ import {
  * @returns {React.ReactNode}
  */
 const ErrorBudgetPage = () => {
-  const { domains, dashboardData, isLoading, error, lastUpdated, refresh, setFilters } = useDashboard();
+  const { filteredDomains: domains, dashboardData, isLoading, error, lastUpdated, refresh, setFilters } = useDashboard();
   const { canViewMetrics } = usePermissions();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeView, setActiveView] = useState('chart');
@@ -389,11 +389,10 @@ const ErrorBudgetPage = () => {
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
             <button
               onClick={() => handleViewChange('chart')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150 ${
-                activeView === 'chart'
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150 ${activeView === 'chart'
                   ? 'bg-white text-dashboard-text-primary shadow-sm'
                   : 'text-dashboard-text-muted hover:text-dashboard-text-secondary'
-              }`}
+                }`}
               aria-pressed={activeView === 'chart'}
               aria-label="Chart view"
             >
@@ -401,11 +400,10 @@ const ErrorBudgetPage = () => {
             </button>
             <button
               onClick={() => handleViewChange('table')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150 ${
-                activeView === 'table'
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150 ${activeView === 'table'
                   ? 'bg-white text-dashboard-text-primary shadow-sm'
                   : 'text-dashboard-text-muted hover:text-dashboard-text-secondary'
-              }`}
+                }`}
               aria-pressed={activeView === 'table'}
               aria-label="Table view"
             >
@@ -417,11 +415,10 @@ const ErrorBudgetPage = () => {
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-150 ${
-              isRefreshing
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors duration-150 ${isRefreshing
                 ? 'bg-gray-50 text-dashboard-text-muted border-dashboard-border cursor-not-allowed'
                 : 'bg-white text-dashboard-text-secondary border-dashboard-border hover:bg-gray-50 hover:text-dashboard-text-primary'
-            }`}
+              }`}
             aria-label="Refresh error budget data"
           >
             <svg
@@ -453,6 +450,7 @@ const ErrorBudgetPage = () => {
         showRootCause={false}
         showSearch={false}
         showReset={true}
+        storageKey="filters_error_budget"
         className="mb-2"
       />
 
@@ -683,13 +681,12 @@ const ErrorBudgetPage = () => {
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
-                                    tierStatus === 'healthy'
+                                  className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${tierStatus === 'healthy'
                                       ? 'bg-status-healthy'
                                       : tierStatus === 'warning'
                                         ? 'bg-status-degraded'
                                         : 'bg-status-down animate-pulse'
-                                  }`}
+                                    }`}
                                 />
                                 <span className="text-sm font-medium text-dashboard-text-primary">
                                   {tier.label}
@@ -868,11 +865,10 @@ const ErrorBudgetPage = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className={`text-sm font-semibold ${
-                            service.availability != null && service.availability >= service.slo
+                          <span className={`text-sm font-semibold ${service.availability != null && service.availability >= service.slo
                               ? 'text-status-healthy'
                               : 'text-severity-critical'
-                          }`}>
+                            }`}>
                             {service.availability != null
                               ? formatPercentage(service.availability, 2)
                               : '—'}

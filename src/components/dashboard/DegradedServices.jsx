@@ -37,18 +37,18 @@ import { formatPercentage, formatNumber } from '../../utils/formatters';
  * @returns {React.ReactNode}
  */
 const DegradedServices = ({ className = '', compact = false, limit = 10, showAllServices = false }) => {
-  const { domains, isLoading, error } = useDashboard();
+  const { filteredDomains, isLoading, error } = useDashboard();
   const [timeWindow, setTimeWindow] = useState('24h');
 
   /**
    * Flatten all services from domains with domain metadata attached.
    */
   const allServices = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return [];
     }
 
-    return domains.flatMap((domain) =>
+    return filteredDomains.flatMap((domain) =>
       (domain.services || []).map((service) => ({
         ...service,
         domain_id: domain.domain_id,
@@ -57,7 +57,7 @@ const DegradedServices = ({ className = '', compact = false, limit = 10, showAll
         sla_target: DEFAULT_SLA_TARGETS[domain.tier] ?? 99.9,
       })),
     );
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Compute degraded services list based on the selected time window.
@@ -366,7 +366,7 @@ const DegradedServices = ({ className = '', compact = false, limit = 10, showAll
   }
 
   // Empty state — no domains at all
-  if (!domains || domains.length === 0) {
+  if (!filteredDomains || filteredDomains.length === 0) {
     return (
       <div className={`${className}`}>
         <EmptyState

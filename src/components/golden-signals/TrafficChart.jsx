@@ -69,7 +69,7 @@ const TrafficChart = ({
   showMetricCards = true,
   chartHeight = 280,
 }) => {
-  const { domains, dashboardData, isLoading, error } = useDashboard();
+  const { filteredDomains, filteredDashboardData, isLoading, error } = useDashboard();
   const [activeServiceId, setActiveServiceId] = useState(selectedServiceId);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
@@ -77,11 +77,11 @@ const TrafficChart = ({
    * Flatten all services from domains with domain metadata attached.
    */
   const allServices = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return [];
     }
 
-    return domains.flatMap((domain) =>
+    return filteredDomains.flatMap((domain) =>
       (domain.services || []).map((service) => ({
         ...service,
         domain_id: domain.domain_id,
@@ -89,7 +89,7 @@ const TrafficChart = ({
         domain_tier: domain.tier,
       })),
     );
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Group services by domain tier for the selector dropdown.
@@ -130,7 +130,7 @@ const TrafficChart = ({
     }
 
     // Find the first service that has time series data
-    const timeSeries = dashboardData?.golden_signal_time_series;
+    const timeSeries = filteredDashboardData?.golden_signal_time_series;
     if (timeSeries) {
       for (const service of allServices) {
         if (timeSeries[service.service_id]?.[GOLDEN_SIGNALS.TRAFFIC]) {
@@ -155,11 +155,11 @@ const TrafficChart = ({
    * Get the traffic time series data for the active service.
    */
   const trafficTimeSeries = useMemo(() => {
-    if (!resolvedServiceId || !dashboardData?.golden_signal_time_series) {
+    if (!resolvedServiceId || !filteredDashboardData?.golden_signal_time_series) {
       return null;
     }
 
-    const serviceTimeSeries = dashboardData.golden_signal_time_series[resolvedServiceId];
+    const serviceTimeSeries = filteredDashboardData.golden_signal_time_series[resolvedServiceId];
     if (!serviceTimeSeries || !serviceTimeSeries[GOLDEN_SIGNALS.TRAFFIC]) {
       return null;
     }
@@ -222,9 +222,8 @@ const TrafficChart = ({
       .filter((v) => v != null && !isNaN(v));
 
     return {
-      rps: rpsValues.length >= 2
-        ? calculateTrendDirection(rpsValues, { threshold: 5 })
-        : defaultTrend,
+      rps:
+        rpsValues.length >= 2 ? calculateTrendDirection(rpsValues, { threshold: 5 }) : defaultTrend,
     };
   }, [trafficTimeSeries]);
 
@@ -408,17 +407,7 @@ const TrafficChart = ({
       const { x, y, width, height, value } = props;
       const fill = getBarColor(value);
 
-      return (
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          fill={fill}
-          rx={2}
-          ry={2}
-        />
-      );
+      return <rect x={x} y={y} width={width} height={height} fill={fill} rx={2} ry={2} />;
     },
     [getBarColor],
   );
@@ -447,7 +436,7 @@ const TrafficChart = ({
   }
 
   // Empty state — no domains
-  if (!domains || domains.length === 0) {
+  if (!filteredDomains || filteredDomains.length === 0) {
     return (
       <div className={`${className}`}>
         <EmptyState
@@ -624,13 +613,19 @@ const TrafficChart = ({
             <div className="hidden sm:flex items-center gap-3 text-xs text-dashboard-text-muted">
               {thresholds.rps.warning != null && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-px bg-status-degraded" style={{ borderTop: '2px dashed #ca8a04' }} />
+                  <span
+                    className="inline-block w-4 h-px bg-status-degraded"
+                    style={{ borderTop: '2px dashed #ca8a04' }}
+                  />
                   Warn: {formatNumber(thresholds.rps.warning, { decimals: 0 })} rps
                 </span>
               )}
               {thresholds.rps.critical != null && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-px bg-severity-critical" style={{ borderTop: '2px dashed #dc2626' }} />
+                  <span
+                    className="inline-block w-4 h-px bg-severity-critical"
+                    style={{ borderTop: '2px dashed #dc2626' }}
+                  />
                   Crit: {formatNumber(thresholds.rps.critical, { decimals: 0 })} rps
                 </span>
               )}
@@ -714,11 +709,7 @@ const TrafficChart = ({
                   bottom: 0,
                 }}
               >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#e2e8f0"
-                  vertical={false}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis
                   dataKey="timeLabel"
                   tick={{ fontSize: 10, fill: '#94a3b8' }}

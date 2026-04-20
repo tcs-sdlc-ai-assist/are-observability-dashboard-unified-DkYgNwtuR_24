@@ -34,7 +34,7 @@ import { formatTimestamp } from '../utils/formatters';
  * @returns {React.ReactNode}
  */
 const ExecutiveOverviewPage = () => {
-  const { domains, isLoading, error, lastUpdated, refresh, setFilters } = useDashboard();
+  const { filteredDomains, isLoading, error, lastUpdated, refresh, setFilters } = useDashboard();
   const { canView } = usePermissions();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -89,7 +89,7 @@ const ExecutiveOverviewPage = () => {
   }
 
   // Error state
-  if (error && !domains?.length) {
+  if (error && !filteredDomains?.length) {
     return (
       <div className="flex items-center justify-center min-h-screen-content">
         <EmptyState
@@ -167,11 +167,12 @@ const ExecutiveOverviewPage = () => {
         showRootCause={false}
         showSearch={false}
         showReset={true}
+        storageKey="filters_executive_overview"
         className="mb-2"
       />
 
       {/* Error banner (non-blocking) */}
-      {error && domains?.length > 0 && (
+      {error && filteredDomains?.length > 0 && (
         <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-yellow-50/50 border border-yellow-200 animate-fade-in">
           <svg
             className="w-5 h-5 text-status-degraded flex-shrink-0 mt-0.5"
@@ -205,52 +206,38 @@ const ExecutiveOverviewPage = () => {
       </section>
 
       {/* SLO Compliance + Error Budget Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         {/* SLO Compliance Section */}
-        <section aria-label="SLO Compliance">
-          <SLOComplianceCard
-            showServiceDetail={true}
-            compact={false}
-            mode="both"
-          />
+        <section aria-label="SLO Compliance" className="min-h-0">
+          <SLOComplianceCard showServiceDetail={true} compact={false} mode="both" />
         </section>
 
         {/* Error Budget Health Section */}
-        <section aria-label="Error Budget Health">
-          <ErrorBudgetChart
-            showServiceDetail={true}
-            showChart={true}
-            compact={false}
-          />
+        <section aria-label="Error Budget Health" className="min-h-0">
+          <ErrorBudgetChart showServiceDetail={true} showChart={true} compact={false} />
         </section>
       </div>
 
       {/* Degraded Services Section */}
       <section aria-label="Degraded Services">
-        <DegradedServices
-          compact={false}
-          limit={10}
-          showAllServices={false}
-        />
+        <DegradedServices compact={false} limit={10} showAllServices={false} />
       </section>
 
       {/* Page Footer */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-dashboard-text-muted">
         <div className="flex items-center gap-3">
           <span>
-            {domains?.length || 0} domain{(domains?.length || 0) !== 1 ? 's' : ''} monitored
+            {filteredDomains?.length || 0} domain{(filteredDomains?.length || 0) !== 1 ? 's' : ''}{' '}
+            monitored
           </span>
           <span>·</span>
           <span>
-            {domains?.reduce((sum, d) => sum + (d.services?.length || 0), 0) || 0} total services
+            {filteredDomains?.reduce((sum, d) => sum + (d.services?.length || 0), 0) || 0} total
+            services
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span>
-              Last refresh: {formatTimestamp(lastUpdated)}
-            </span>
-          )}
+          {lastUpdated && <span>Last refresh: {formatTimestamp(lastUpdated)}</span>}
         </div>
       </div>
     </div>

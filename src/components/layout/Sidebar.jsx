@@ -211,18 +211,38 @@ const Sidebar = ({ mobileOpen = false, onMobileClose }) => {
    */
   const renderNavItem = useCallback(
     (item) => {
-      return (
-        <NavLink
-          key={item.key}
-          to={item.path}
-          end={item.path === '/'}
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 group ${
-              isActive
-                ? 'bg-dashboard-sidebar-active text-white'
-                : 'text-dashboard-sidebar-text hover:bg-dashboard-sidebar-hover hover:text-white'
-            } ${collapsed ? 'justify-center px-2' : ''}`
+      const isExternal = Boolean(item.url);
+      const linkProps = isExternal
+        ? {
+            href: item.url,
+            target: '_blank',
+            rel: 'noopener noreferrer',
           }
+        : {
+            to: item.path,
+            end: item.path === '/',
+          };
+
+      const LinkComponent = isExternal ? 'a' : NavLink;
+
+      const itemClassName = `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 group ${
+        collapsed ? 'justify-center px-2' : ''
+      }`;
+
+      const navLinkClassName = ({ isActive }) =>
+        `${itemClassName} ${
+          isActive
+            ? 'bg-dashboard-sidebar-active text-white'
+            : 'text-dashboard-sidebar-text hover:bg-dashboard-sidebar-hover hover:text-white'
+        }`;
+
+      const externalLinkClassName = `${itemClassName} text-dashboard-sidebar-text hover:bg-dashboard-sidebar-hover hover:text-white`;
+
+      return (
+        <LinkComponent
+          key={item.key}
+          {...linkProps}
+          className={isExternal ? externalLinkClassName : navLinkClassName}
           title={collapsed ? item.label : undefined}
         >
           <NavIcon
@@ -232,7 +252,22 @@ const Sidebar = ({ mobileOpen = false, onMobileClose }) => {
           {!collapsed && (
             <span className="truncate">{item.label}</span>
           )}
-        </NavLink>
+          {!collapsed && isExternal && (
+            <svg
+              className="w-3 h-3 flex-shrink-0 opacity-50"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
+              />
+            </svg>
+          )}
+        </LinkComponent>
       );
     },
     [collapsed],

@@ -99,14 +99,15 @@ const DOMAIN_TIER_ORDER = Object.freeze({
 });
 
 const DEFAULT_DOMAINS = Object.freeze([
-  { id: 'claims', name: 'Claims', tier: DOMAIN_TIERS.CRITICAL },
-  { id: 'enrollment', name: 'Enrollment', tier: DOMAIN_TIERS.CRITICAL },
-  { id: 'provider', name: 'Provider', tier: DOMAIN_TIERS.CRITICAL },
-  { id: 'member', name: 'Member', tier: DOMAIN_TIERS.CORE },
-  { id: 'pharmacy', name: 'Pharmacy', tier: DOMAIN_TIERS.CORE },
-  { id: 'billing', name: 'Billing', tier: DOMAIN_TIERS.CORE },
-  { id: 'reporting', name: 'Reporting', tier: DOMAIN_TIERS.SUPPORTING },
-  { id: 'notifications', name: 'Notifications', tier: DOMAIN_TIERS.SUPPORTING },
+  { id: 'corporate-functions', name: 'Corporate Functions', tier: DOMAIN_TIERS.CRITICAL },
+  { id: 'horizontal-shared-platforms', name: 'Horizontal Functions-Shared Platforms', tier: DOMAIN_TIERS.CRITICAL },
+  { id: 'health-and-network', name: 'Health and Network', tier: DOMAIN_TIERS.CRITICAL },
+  { id: 'data-analytics', name: 'Data & Analytics', tier: DOMAIN_TIERS.CORE },
+  { id: 'horizontal-integration', name: 'Horizontal Functions - Integration', tier: DOMAIN_TIERS.CORE },
+  { id: 'market-facing', name: 'Market Facing', tier: DOMAIN_TIERS.CORE },
+  { id: 'service-core-admin', name: 'Service & Core Admin', tier: DOMAIN_TIERS.SUPPORTING },
+  { id: 'enrollment-billing', name: 'Enrollment & Billing', tier: DOMAIN_TIERS.SUPPORTING },
+  { id: 'speciality', name: 'Speciality', tier: DOMAIN_TIERS.SUPPORTING },
 ]);
 
 const DEFAULT_SLA_TARGETS = Object.freeze({

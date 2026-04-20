@@ -46,7 +46,15 @@ import { getRelativeTime } from '../utils/dateUtils';
  * @returns {React.ReactNode}
  */
 const GoldenSignalsPage = () => {
-  const { domains, dashboardData, isLoading, error, lastUpdated, refresh, setFilters } = useDashboard();
+  const {
+    filteredDomains,
+    filteredDashboardData,
+    isLoading,
+    error,
+    lastUpdated,
+    refresh,
+    setFilters,
+  } = useDashboard();
   const { canViewMetrics } = usePermissions();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState(null);
@@ -93,14 +101,14 @@ const GoldenSignalsPage = () => {
   }, []);
 
   /**
-   * Flatten all services from domains with domain metadata attached.
+   * Flatten all services from filteredDomains with domain metadata attached.
    */
   const allServices = (() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return [];
     }
 
-    return domains.flatMap((domain) =>
+    return filteredDomains.flatMap((domain) =>
       (domain.services || []).map((service) => ({
         ...service,
         domain_id: domain.domain_id,
@@ -202,16 +210,15 @@ const GoldenSignalsPage = () => {
       healthyServices,
       degradedServices,
       downServices,
-      avgLatencyP95: latencyP95Count > 0
-        ? parseFloat((totalLatencyP95 / latencyP95Count).toFixed(2))
-        : null,
-      avgTrafficRps: trafficRpsCount > 0
-        ? parseFloat((totalTrafficRps / trafficRpsCount).toFixed(0))
-        : null,
+      avgLatencyP95:
+        latencyP95Count > 0 ? parseFloat((totalLatencyP95 / latencyP95Count).toFixed(2)) : null,
+      avgTrafficRps:
+        trafficRpsCount > 0 ? parseFloat((totalTrafficRps / trafficRpsCount).toFixed(0)) : null,
       totalErrors5xx: errors5xxCount > 0 ? totalErrors5xx : null,
-      avgCpuSaturation: cpuSaturationCount > 0
-        ? parseFloat((totalCpuSaturation / cpuSaturationCount).toFixed(2))
-        : null,
+      avgCpuSaturation:
+        cpuSaturationCount > 0
+          ? parseFloat((totalCpuSaturation / cpuSaturationCount).toFixed(2))
+          : null,
       servicesWithHighLatency,
       servicesWithHighErrors,
       servicesWithHighSaturation,
@@ -223,7 +230,8 @@ const GoldenSignalsPage = () => {
    */
   const overallStatus = (() => {
     if (overallSummary.totalServices === 0) return 'unknown';
-    if (overallSummary.downServices > 0 || overallSummary.servicesWithHighErrors > 2) return 'critical';
+    if (overallSummary.downServices > 0 || overallSummary.servicesWithHighErrors > 2)
+      return 'critical';
     if (
       overallSummary.degradedServices > 0 ||
       overallSummary.servicesWithHighLatency > 0 ||
@@ -239,8 +247,8 @@ const GoldenSignalsPage = () => {
    * Check if golden signal time series data is available.
    */
   const hasTimeSeriesData = (() => {
-    if (!dashboardData || !dashboardData.golden_signal_time_series) return false;
-    return Object.keys(dashboardData.golden_signal_time_series).length > 0;
+    if (!filteredDashboardData || !filteredDashboardData.golden_signal_time_series) return false;
+    return Object.keys(filteredDashboardData.golden_signal_time_series).length > 0;
   })();
 
   /**
@@ -275,7 +283,7 @@ const GoldenSignalsPage = () => {
   }
 
   // Error state
-  if (error && !domains?.length) {
+  if (error && !filteredDomains?.length) {
     return (
       <div className="flex items-center justify-center min-h-screen-content">
         <EmptyState
@@ -354,11 +362,12 @@ const GoldenSignalsPage = () => {
         showSearch={false}
         showReset={true}
         serviceOptions={serviceOptions}
+        storageKey="filters_golden_signals"
         className="mb-2"
       />
 
       {/* Error banner (non-blocking) */}
-      {error && domains?.length > 0 && (
+      {error && filteredDomains?.length > 0 && (
         <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-yellow-50/50 border border-yellow-200 animate-fade-in">
           <svg
             className="w-5 h-5 text-status-degraded flex-shrink-0 mt-0.5"
@@ -457,10 +466,12 @@ const GoldenSignalsPage = () => {
             status={
               overallSummary.avgCpuSaturation != null
                 ? DEFAULT_METRIC_THRESHOLDS.saturation_cpu.critical != null &&
-                  overallSummary.avgCpuSaturation >= DEFAULT_METRIC_THRESHOLDS.saturation_cpu.critical
+                  overallSummary.avgCpuSaturation >=
+                    DEFAULT_METRIC_THRESHOLDS.saturation_cpu.critical
                   ? 'critical'
                   : DEFAULT_METRIC_THRESHOLDS.saturation_cpu.warning != null &&
-                      overallSummary.avgCpuSaturation >= DEFAULT_METRIC_THRESHOLDS.saturation_cpu.warning
+                      overallSummary.avgCpuSaturation >=
+                        DEFAULT_METRIC_THRESHOLDS.saturation_cpu.warning
                     ? 'warning'
                     : 'healthy'
                 : undefined
@@ -480,7 +491,9 @@ const GoldenSignalsPage = () => {
             value={
               overallSummary.totalServices > 0
                 ? parseFloat(
-                    ((overallSummary.healthyServices / overallSummary.totalServices) * 100).toFixed(1),
+                    ((overallSummary.healthyServices / overallSummary.totalServices) * 100).toFixed(
+                      1,
+                    ),
                   )
                 : 0
             }
@@ -532,23 +545,63 @@ const GoldenSignalsPage = () => {
                 aria-label={`Focus on ${GOLDEN_SIGNAL_LABELS[signal]}`}
               >
                 {signal === GOLDEN_SIGNALS.LATENCY && (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                 )}
                 {signal === GOLDEN_SIGNALS.TRAFFIC && (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12.75a.75.75 0 100-1.5.75.75 0 000 1.5z" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12.75a.75.75 0 100-1.5.75.75 0 000 1.5z"
+                    />
                   </svg>
                 )}
                 {signal === GOLDEN_SIGNALS.ERRORS && (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                    />
                   </svg>
                 )}
                 {signal === GOLDEN_SIGNALS.SATURATION && (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+                    />
                   </svg>
                 )}
                 {GOLDEN_SIGNAL_LABELS[signal]}
@@ -575,7 +628,7 @@ const GoldenSignalsPage = () => {
       </section>
 
       {/* No time series data warning */}
-      {!hasTimeSeriesData && domains && domains.length > 0 && (
+      {!hasTimeSeriesData && filteredDomains && filteredDomains.length > 0 && (
         <div className="dashboard-card overflow-hidden">
           <EmptyState
             preset="no-metrics"
@@ -591,9 +644,7 @@ const GoldenSignalsPage = () => {
       {hasTimeSeriesData && (
         <div
           className={`grid gap-6 ${
-            activeSignal !== null
-              ? 'grid-cols-1'
-              : 'grid-cols-1 xl:grid-cols-2'
+            activeSignal !== null ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'
           }`}
         >
           {/* Latency Chart */}
@@ -698,34 +749,64 @@ const GoldenSignalsPage = () => {
               <table className="w-full text-sm" role="grid">
                 <thead>
                   <tr className="border-b border-dashboard-border bg-gray-50/50">
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-left" style={{ width: '18%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-left"
+                      style={{ width: '18%' }}
+                    >
                       Service
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-left" style={{ width: '12%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-left"
+                      style={{ width: '12%' }}
+                    >
                       Domain
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right" style={{ width: '10%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right"
+                      style={{ width: '10%' }}
+                    >
                       P95 Latency
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right" style={{ width: '10%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right"
+                      style={{ width: '10%' }}
+                    >
                       P99 Latency
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right" style={{ width: '10%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right"
+                      style={{ width: '10%' }}
+                    >
                       Traffic
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right" style={{ width: '8%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right"
+                      style={{ width: '8%' }}
+                    >
                       5xx Errors
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right" style={{ width: '8%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right"
+                      style={{ width: '8%' }}
+                    >
                       CPU
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right" style={{ width: '8%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right"
+                      style={{ width: '8%' }}
+                    >
                       Memory
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right" style={{ width: '8%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-right"
+                      style={{ width: '8%' }}
+                    >
                       Queue
                     </th>
-                    <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-center" style={{ width: '8%' }}>
+                    <th
+                      className="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-dashboard-text-muted text-center"
+                      style={{ width: '8%' }}
+                    >
                       Status
                     </th>
                   </tr>
@@ -741,22 +822,14 @@ const GoldenSignalsPage = () => {
                     })
                     .map((service) => {
                       const signals = service.golden_signals || {};
-                      const latencyP95Warning =
-                        DEFAULT_METRIC_THRESHOLDS.latency_p95.warning;
-                      const latencyP95Critical =
-                        DEFAULT_METRIC_THRESHOLDS.latency_p95.critical;
-                      const errors5xxWarning =
-                        DEFAULT_METRIC_THRESHOLDS.errors_5xx.warning;
-                      const errors5xxCritical =
-                        DEFAULT_METRIC_THRESHOLDS.errors_5xx.critical;
-                      const cpuWarning =
-                        DEFAULT_METRIC_THRESHOLDS.saturation_cpu.warning;
-                      const cpuCritical =
-                        DEFAULT_METRIC_THRESHOLDS.saturation_cpu.critical;
-                      const memWarning =
-                        DEFAULT_METRIC_THRESHOLDS.saturation_mem.warning;
-                      const memCritical =
-                        DEFAULT_METRIC_THRESHOLDS.saturation_mem.critical;
+                      const latencyP95Warning = DEFAULT_METRIC_THRESHOLDS.latency_p95.warning;
+                      const latencyP95Critical = DEFAULT_METRIC_THRESHOLDS.latency_p95.critical;
+                      const errors5xxWarning = DEFAULT_METRIC_THRESHOLDS.errors_5xx.warning;
+                      const errors5xxCritical = DEFAULT_METRIC_THRESHOLDS.errors_5xx.critical;
+                      const cpuWarning = DEFAULT_METRIC_THRESHOLDS.saturation_cpu.warning;
+                      const cpuCritical = DEFAULT_METRIC_THRESHOLDS.saturation_cpu.critical;
+                      const memWarning = DEFAULT_METRIC_THRESHOLDS.saturation_mem.warning;
+                      const memCritical = DEFAULT_METRIC_THRESHOLDS.saturation_mem.critical;
 
                       const getColorClass = (value, warning, critical) => {
                         if (value == null || isNaN(value)) return 'text-dashboard-text-muted';
@@ -880,7 +953,8 @@ const GoldenSignalsPage = () => {
               <div className="flex items-center gap-3 text-xs text-dashboard-text-muted">
                 <span>
                   {allServices.length} service{allServices.length !== 1 ? 's' : ''} across{' '}
-                  {domains?.length || 0} domain{(domains?.length || 0) !== 1 ? 's' : ''}
+                  {filteredDomains?.length || 0} domain
+                  {(filteredDomains?.length || 0) !== 1 ? 's' : ''}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs text-dashboard-text-muted">
@@ -906,23 +980,16 @@ const GoldenSignalsPage = () => {
       <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-dashboard-text-muted">
         <div className="flex items-center gap-3">
           <span>
-            {domains?.length || 0} domain{(domains?.length || 0) !== 1 ? 's' : ''} monitored
+            {filteredDomains?.length || 0} domain{(filteredDomains?.length || 0) !== 1 ? 's' : ''}{' '}
+            monitored
           </span>
           <span>·</span>
-          <span>
-            {allServices.length} total services
-          </span>
+          <span>{allServices.length} total services</span>
           <span>·</span>
-          <span>
-            4 golden signals: Latency, Traffic, Errors, Saturation
-          </span>
+          <span>4 golden signals: Latency, Traffic, Errors, Saturation</span>
         </div>
         <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span>
-              Last refresh: {formatTimestamp(lastUpdated)}
-            </span>
-          )}
+          {lastUpdated && <span>Last refresh: {formatTimestamp(lastUpdated)}</span>}
         </div>
       </div>
     </div>

@@ -69,7 +69,7 @@ const ErrorRateChart = ({
   showMetricCards = true,
   chartHeight = 280,
 }) => {
-  const { domains, dashboardData, isLoading, error } = useDashboard();
+  const { filteredDomains, filteredDashboardData, isLoading, error } = useDashboard();
   const [activeServiceId, setActiveServiceId] = useState(selectedServiceId);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
@@ -77,11 +77,11 @@ const ErrorRateChart = ({
    * Flatten all services from domains with domain metadata attached.
    */
   const allServices = useMemo(() => {
-    if (!domains || !Array.isArray(domains) || domains.length === 0) {
+    if (!filteredDomains || !Array.isArray(filteredDomains) || filteredDomains.length === 0) {
       return [];
     }
 
-    return domains.flatMap((domain) =>
+    return filteredDomains.flatMap((domain) =>
       (domain.services || []).map((service) => ({
         ...service,
         domain_id: domain.domain_id,
@@ -89,7 +89,7 @@ const ErrorRateChart = ({
         domain_tier: domain.tier,
       })),
     );
-  }, [domains]);
+  }, [filteredDomains]);
 
   /**
    * Group services by domain tier for the selector dropdown.
@@ -130,7 +130,7 @@ const ErrorRateChart = ({
     }
 
     // Find the first service that has time series data
-    const timeSeries = dashboardData?.golden_signal_time_series;
+    const timeSeries = filteredDashboardData?.golden_signal_time_series;
     if (timeSeries) {
       for (const service of allServices) {
         if (timeSeries[service.service_id]?.[GOLDEN_SIGNALS.ERRORS]) {
@@ -155,11 +155,11 @@ const ErrorRateChart = ({
    * Get the error rate time series data for the active service.
    */
   const errorTimeSeries = useMemo(() => {
-    if (!resolvedServiceId || !dashboardData?.golden_signal_time_series) {
+    if (!resolvedServiceId || !filteredDashboardData?.golden_signal_time_series) {
       return null;
     }
 
-    const serviceTimeSeries = dashboardData.golden_signal_time_series[resolvedServiceId];
+    const serviceTimeSeries = filteredDashboardData.golden_signal_time_series[resolvedServiceId];
     if (!serviceTimeSeries || !serviceTimeSeries[GOLDEN_SIGNALS.ERRORS]) {
       return null;
     }
@@ -227,12 +227,14 @@ const ErrorRateChart = ({
       .filter((v) => v != null && !isNaN(v));
 
     return {
-      errors_5xx: errors5xxValues.length >= 2
-        ? calculateTrendDirection(errors5xxValues, { threshold: 5 })
-        : defaultTrend,
-      errors_functional: errorsFunctionalValues.length >= 2
-        ? calculateTrendDirection(errorsFunctionalValues, { threshold: 5 })
-        : defaultTrend,
+      errors_5xx:
+        errors5xxValues.length >= 2
+          ? calculateTrendDirection(errors5xxValues, { threshold: 5 })
+          : defaultTrend,
+      errors_functional:
+        errorsFunctionalValues.length >= 2
+          ? calculateTrendDirection(errorsFunctionalValues, { threshold: 5 })
+          : defaultTrend,
     };
   }, [errorTimeSeries]);
 
@@ -262,7 +264,8 @@ const ErrorRateChart = ({
     // Include threshold values in domain calculation
     if (thresholds.errors_5xx.warning != null) allValues.push(thresholds.errors_5xx.warning);
     if (thresholds.errors_5xx.critical != null) allValues.push(thresholds.errors_5xx.critical);
-    if (thresholds.errors_functional.critical != null) allValues.push(thresholds.errors_functional.critical);
+    if (thresholds.errors_functional.critical != null)
+      allValues.push(thresholds.errors_functional.critical);
 
     return calculateYAxisDomain(allValues, {
       paddingPercent: 10,
@@ -274,7 +277,8 @@ const ErrorRateChart = ({
    * Determine the overall error rate health status.
    */
   const errorStatus = useMemo(() => {
-    if (currentErrors.errors_5xx == null && currentErrors.errors_functional == null) return 'unknown';
+    if (currentErrors.errors_5xx == null && currentErrors.errors_functional == null)
+      return 'unknown';
 
     const e5xxCritical = thresholds.errors_5xx.critical;
     const e5xxWarning = thresholds.errors_5xx.warning;
@@ -282,15 +286,23 @@ const ErrorRateChart = ({
     const eFuncWarning = thresholds.errors_functional.warning;
 
     if (
-      (e5xxCritical != null && currentErrors.errors_5xx != null && currentErrors.errors_5xx >= e5xxCritical) ||
-      (eFuncCritical != null && currentErrors.errors_functional != null && currentErrors.errors_functional >= eFuncCritical)
+      (e5xxCritical != null &&
+        currentErrors.errors_5xx != null &&
+        currentErrors.errors_5xx >= e5xxCritical) ||
+      (eFuncCritical != null &&
+        currentErrors.errors_functional != null &&
+        currentErrors.errors_functional >= eFuncCritical)
     ) {
       return 'critical';
     }
 
     if (
-      (e5xxWarning != null && currentErrors.errors_5xx != null && currentErrors.errors_5xx >= e5xxWarning) ||
-      (eFuncWarning != null && currentErrors.errors_functional != null && currentErrors.errors_functional >= eFuncWarning)
+      (e5xxWarning != null &&
+        currentErrors.errors_5xx != null &&
+        currentErrors.errors_5xx >= e5xxWarning) ||
+      (eFuncWarning != null &&
+        currentErrors.errors_functional != null &&
+        currentErrors.errors_functional >= eFuncWarning)
     ) {
       return 'warning';
     }
@@ -465,7 +477,7 @@ const ErrorRateChart = ({
   }
 
   // Empty state — no domains
-  if (!domains || domains.length === 0) {
+  if (!filteredDomains || filteredDomains.length === 0) {
     return (
       <div className={`${className}`}>
         <EmptyState
@@ -642,13 +654,19 @@ const ErrorRateChart = ({
             <div className="hidden sm:flex items-center gap-3 text-xs text-dashboard-text-muted">
               {thresholds.errors_5xx.warning != null && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-px bg-status-degraded" style={{ borderTop: '2px dashed #ca8a04' }} />
+                  <span
+                    className="inline-block w-4 h-px bg-status-degraded"
+                    style={{ borderTop: '2px dashed #ca8a04' }}
+                  />
                   Warn: {formatNumber(thresholds.errors_5xx.warning, { decimals: 0 })}
                 </span>
               )}
               {thresholds.errors_5xx.critical != null && (
                 <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-px bg-severity-critical" style={{ borderTop: '2px dashed #dc2626' }} />
+                  <span
+                    className="inline-block w-4 h-px bg-severity-critical"
+                    style={{ borderTop: '2px dashed #dc2626' }}
+                  />
                   Crit: {formatNumber(thresholds.errors_5xx.critical, { decimals: 0 })}
                 </span>
               )}
@@ -670,9 +688,11 @@ const ErrorRateChart = ({
               size="sm"
               status={
                 currentErrors.errors_5xx != null
-                  ? thresholds.errors_5xx.critical != null && currentErrors.errors_5xx >= thresholds.errors_5xx.critical
+                  ? thresholds.errors_5xx.critical != null &&
+                    currentErrors.errors_5xx >= thresholds.errors_5xx.critical
                     ? 'critical'
-                    : thresholds.errors_5xx.warning != null && currentErrors.errors_5xx >= thresholds.errors_5xx.warning
+                    : thresholds.errors_5xx.warning != null &&
+                        currentErrors.errors_5xx >= thresholds.errors_5xx.warning
                       ? 'warning'
                       : 'healthy'
                   : undefined
@@ -691,9 +711,11 @@ const ErrorRateChart = ({
               size="sm"
               status={
                 currentErrors.errors_functional != null
-                  ? thresholds.errors_functional.critical != null && currentErrors.errors_functional >= thresholds.errors_functional.critical
+                  ? thresholds.errors_functional.critical != null &&
+                    currentErrors.errors_functional >= thresholds.errors_functional.critical
                     ? 'critical'
-                    : thresholds.errors_functional.warning != null && currentErrors.errors_functional >= thresholds.errors_functional.warning
+                    : thresholds.errors_functional.warning != null &&
+                        currentErrors.errors_functional >= thresholds.errors_functional.warning
                       ? 'warning'
                       : 'healthy'
                   : undefined
@@ -754,11 +776,7 @@ const ErrorRateChart = ({
                   bottom: 0,
                 }}
               >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#e2e8f0"
-                  vertical={false}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                 <XAxis
                   dataKey="timeLabel"
                   tick={{ fontSize: 10, fill: '#94a3b8' }}
