@@ -27,20 +27,22 @@ import {
   SEVERITY_LEVELS,
   SEVERITY_ORDER,
   RCA_CATEGORIES,
+  DOMAIN_TIERS,
   DOMAIN_TIER_ORDER,
   DEFAULT_DOMAINS,
   DEFAULT_SLA_TARGETS,
   DEFAULT_SLO_TARGETS,
   DEFAULT_ERROR_BUDGET_THRESHOLDS,
   DEFAULT_METRIC_THRESHOLDS,
+  SERVICE_STATUS,
   TIME_RANGES,
   getDefaultSLATarget,
   getDefaultSLOTarget,
   getMetricThreshold,
+  getServiceStatusFromAvailability,
 } from '../constants/metrics';
 import { validateCSVSchema, validateMetricThresholds } from '../utils/validators';
 import { parseTimestamp, isWithinRange, getTimeRange } from '../utils/dateUtils';
-import { transformMetricsRowsToDashboardData } from '../utils/metricsTransform';
 
 const DASHBOARD_DATA_STORAGE_KEY = 'dashboard_data';
 const DASHBOARD_DATA_BACKUP_KEY = 'dashboard_data_backup';
@@ -355,10 +357,10 @@ const getDashboardData = async () => {
       };
 
       if (storedData.golden_signal_time_series) {
-        mergedData.golden_signal_time_series = deepMerge(
-          mergedData.golden_signal_time_series,
-          storedData.golden_signal_time_series,
-        );
+        mergedData.golden_signal_time_series = {
+          ...mergedData.golden_signal_time_series,
+          ...storedData.golden_signal_time_series,
+        };
       }
 
       if (storedData.dependency_graph) {
@@ -399,13 +401,6 @@ const getDashboardData = async () => {
         mergedData.sla_compliance = mergeCompliance(
           mergedData.sla_compliance,
           uploadedData.sla_compliance,
-        );
-      }
-
-      if (uploadedData.golden_signal_time_series) {
-        mergedData.golden_signal_time_series = deepMerge(
-          mergedData.golden_signal_time_series,
-          uploadedData.golden_signal_time_series,
         );
       }
     }
@@ -710,15 +705,10 @@ const uploadInterimData = async (data, options = {}) => {
           transformedData = transformMetricsUpload(data.rows);
           if (mode === 'replace') {
             existingUploaded.domains = transformedData.domains;
-            existingUploaded.golden_signal_time_series = transformedData.golden_signal_time_series;
           } else {
             existingUploaded.domains = mergeDomains(
               existingUploaded.domains || [],
               transformedData.domains,
-            );
-            existingUploaded.golden_signal_time_series = deepMerge(
-              existingUploaded.golden_signal_time_series || {},
-              transformedData.golden_signal_time_series,
             );
           }
           rowsImported = data.rows.length;
@@ -1257,7 +1247,76 @@ const getComplianceReports = async (filters = {}) => {
  * @returns {{ domains: Object[] }} Transformed domain data.
  */
 const transformMetricsUpload = (rows) => {
-  return transformMetricsRowsToDashboardData(rows);
+  const domainMap = new Map();
+
+  for (const row of rows) {
+    if (!row.domain_id || !row.service_id) {
+      continue;
+    }
+
+    const domainId = row.domain_id.trim();
+    const serviceId = row.service_id.trim();
+
+    if (!domainMap.has(domainId)) {
+      domainMap.set(domainId, {
+        domain_id: domainId,
+        name: domainId,
+        tier: DOMAIN_TIERS.SUPPORTING,
+        services: new Map(),
+      });
+    }
+
+    const domain = domainMap.get(domainId);
+    const serviceMap = domain.services;
+
+    if (!serviceMap.has(serviceId)) {
+      serviceMap.set(serviceId, {
+        service_id: serviceId,
+        name: serviceId,
+        availability: 0,
+        sla: 0,
+        slo: 0,
+        error_budget: 100,
+        status: SERVICE_STATUS.UNKNOWN,
+        golden_signals: {},
+        dependencies: [],
+      });
+    }
+
+    const service = serviceMap.get(serviceId);
+
+    // Update service with row data
+    if (row.availability != null && !isNaN(parseFloat(row.availability))) {
+      service.availability = parseFloat(parseFloat(row.availability).toFixed(2));
+      service.status = getServiceStatusFromAvailability(service.availability);
+    }
+
+    // Map golden signal fields
+    const signalFields = [
+      'latency_p95',
+      'latency_p99',
+      'traffic_rps',
+      'errors_5xx',
+      'errors_functional',
+      'saturation_cpu',
+      'saturation_mem',
+      'saturation_queue',
+    ];
+
+    for (const field of signalFields) {
+      if (row[field] != null && !isNaN(parseFloat(row[field]))) {
+        service.golden_signals[field] = parseFloat(parseFloat(row[field]).toFixed(2));
+      }
+    }
+  }
+
+  // Convert Maps to arrays
+  const domains = Array.from(domainMap.values()).map((domain) => ({
+    ...domain,
+    services: Array.from(domain.services.values()),
+  }));
+
+  return { domains };
 };
 
 /**
